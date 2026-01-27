@@ -341,44 +341,24 @@ return [
         //     'url' => 'admin/settings',
         //     'icon' => 'fas fa-fw fa-lock',
         // ],
-        // [
-        //     'text' => 'multilevel',
-        //     'icon' => 'fas fa-fw fa-share',
-        //     'submenu' => [
-        //         [
-        //             'text' => 'level_one',
-        //             'url' => '#',
-        //         ],
-        //         [
-        //             'text' => 'level_one',
-        //             'url' => '#',
-        //             'submenu' => [
-        //                 [
-        //                     'text' => 'level_two',
-        //                     'url' => '#',
-        //                 ],
-        //                 [
-        //                     'text' => 'level_two',
-        //                     'url' => '#',
-        //                     'submenu' => [
-        //                         [
-        //                             'text' => 'level_three',
-        //                             'url' => '#',
-        //                         ],
-        //                         [
-        //                             'text' => 'level_three',
-        //                             'url' => '#',
-        //                         ],
-        //                     ],
-        //                 ],
-        //             ],
-        //         ],
-        //         [
-        //             'text' => 'level_one',
-        //             'url' => '#',
-        //         ],
-        //     ],
-        // ],
+        [
+            'text' => 'System',
+            'icon' => 'fas fa-fw fa-cog',
+            'submenu' => [
+                [
+                    'text' => 'Jenis Peralatan',
+                    'url' => '#',
+                ],
+                [
+                    'text' => 'Tipe Peralatan',
+                    'url' => '#',
+                ],
+                [
+                    'text' => 'Kategori Peralatan',
+                    'url' => '#',
+                ],
+            ],
+        ],
         // ['header' => 'labels'],
         // [
         //     'text' => 'important',
