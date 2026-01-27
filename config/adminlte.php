@@ -336,11 +336,11 @@ return [
         //     'url' => 'admin/settings',
         //     'icon' => 'fas fa-fw fa-user',
         // ],
-        // [
-        //     'text' => 'change_password',
-        //     'url' => 'admin/settings',
-        //     'icon' => 'fas fa-fw fa-lock',
-        // ],
+        [
+            'text' => 'Client',
+            'url' => '#',
+            'icon' => 'fas fa-fw fa-user',
+        ],
         [
             'text' => 'System',
             'icon' => 'fas fa-fw fa-cog',
