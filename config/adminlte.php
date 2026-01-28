@@ -347,7 +347,7 @@ return [
             'submenu' => [
                 [
                     'text' => 'Jenis Peralatan',
-                    'url' => '#',
+                    'url'  => '/jenis-peralatan',
                 ],
                 [
                     'text' => 'Tipe Peralatan',
