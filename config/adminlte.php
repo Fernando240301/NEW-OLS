@@ -327,8 +327,8 @@ return [
             'text' => 'Home',
             'url' => 'main',
             'icon' => 'fas fa-fw fa-home',
-            'label' => 4,
-            'label_color' => 'success',
+            // 'label' => 4,
+            // 'label_color' => 'success',
         ],
         // ['header' => 'account_settings'],
         // [
@@ -338,7 +338,7 @@ return [
         // ],
         [
             'text' => 'Client',
-            'url' => '#',
+            'url' => 'client',
             'icon' => 'fas fa-fw fa-user',
         ],
         [
@@ -413,7 +413,7 @@ return [
 
     'plugins' => [
         'Datatables' => [
-            'active' => false,
+            'active' => true,
             'files' => [
                 [
                     'type' => 'js',
