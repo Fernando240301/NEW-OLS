@@ -11,17 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sys_users_detail', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
+        // Baseline migration
+        // Table sys_users already exists (legacy)
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('sys_users_detail');
+        // Jangan drop table legacy di server
+        // Schema::dropIfExists('sys_users');
     }
 };
