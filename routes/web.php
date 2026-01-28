@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MainController;
+use App\Http\Controllers\JenisPeralatanController;
 use Illuminate\Support\Facades\Route;
 
 // Tampilkan halaman login
@@ -37,3 +38,27 @@ Route::post('/logout', function () {
 Route::get('/activity-log', function () {
     return view('activity.index');
 })->middleware('auth')->name('activity.log');
+//jenis peralatan
+
+Route::get('/jenis-peralatan', [JenisPeralatanController::class, 'index'])
+    ->middleware('auth')
+    ->name('jenisperalatan');
+
+Route::get('/tambahperalatan', [JenisPeralatanController::class, 'create'])
+    ->middleware('auth')
+    ->name('tambahperalatan');
+
+Route::post('/tambahperalatan', [JenisPeralatanController::class, 'store'])
+    ->middleware('auth')
+    ->name('tambahperalatan.store');
+
+// Tampilkan form edit
+Route::get('/jenis-peralatan/{id}/edit', [JenisPeralatanController::class, 'edit'])
+    ->name('tambahperalatan.edit');
+
+// Update
+Route::put('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'update'])
+    ->name('tambahperalatan.update');
+Route::delete('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'destroy'])
+    ->name('tambahperalatan.destroy');
+
