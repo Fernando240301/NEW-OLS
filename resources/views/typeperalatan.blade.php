@@ -11,7 +11,7 @@
     <div class="card-header">
         <h3 class="card-title">📦 Data Type Peralatan</h3>
         <div class="card-tools">
-            <a href="{{ route('tambahperalatan') }}" class="btn btn-primary btn-sm">
+            <a href="{{ route('typeperalatan.create') }}" class="btn btn-primary btn-sm">
     <i class="fas fa-plus"></i> Tambah Data
 </a>
 
@@ -23,29 +23,32 @@
     <thead>
     <tr>
         <th>No</th>
-        <th>Nama Peralatan</th>
+        <th>Type Alat</th>
+        <th>ID_ALAT</th>
         <th style="width: 20%" class="text-center">Aksi</th>
     </tr>
 </thead>
 <tbody>
 @foreach ($data as $item)
-    <tr>
-        <td>{{ $loop->iteration }}</td>
-        <td>{{ $item->nama_peralatan }}</td>
-        <td class="text-center">
-            <button class="btn btn-info btn-sm">Detail</button>
-            <a href="{{ route('tambahperalatan.edit', $item->id) }}" class="btn btn-warning btn-sm">Edit</a>
-            <form action="{{ route('tambahperalatan.destroy', $item->id) }}" method="POST" style="display:inline-block;">
-        @csrf
-        @method('DELETE')
-        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus data ini?')">
-            Hapus
-        </button>
-    </form>
-        </td>
-    </tr>
+<tr>
+    <td>{{ $loop->iteration }}</td>
+    <td>{{ $item->type }}</td>
+    <td>{{ $item->jenis->id ?? '-' }}</td> <!-- menampilkan nama jenis -->
+    <td class="text-center">
+        <button class="btn btn-info btn-sm">Detail</button>
+        <a href="{{ route('tambahtype.edit', $item->id) }}" class="btn btn-warning btn-sm">Edit</a>
+        <form action="{{ route('tambahtype.destroy', $item->id) }}" method="POST" style="display:inline-block;">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus data ini?')">
+                Hapus
+            </button>
+        </form>
+    </td>
+</tr>
 @endforeach
 </tbody>
+
         </table>
     </div>
 </div>
