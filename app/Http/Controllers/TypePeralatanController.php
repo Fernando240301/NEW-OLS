@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\JenisPeralatan;
+use App\Models\TypePeralatan;
 use Illuminate\Http\Request;
 
-class JenisPeralatanController extends Controller
+class TypePeralatanController extends Controller
 {
     public function index()
     {
-        $data = JenisPeralatan::all();
+        $data = TypePeralatan::all();
         return view('jenisperalatan', compact('data'));
     }
     public function create()

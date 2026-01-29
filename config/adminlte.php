@@ -351,7 +351,7 @@ return [
                 ],
                 [
                     'text' => 'Tipe Peralatan',
-                    'url' => '#',
+                    'url' => '/typeperalatan',
                 ],
                 [
                     'text' => 'Kategori Peralatan',

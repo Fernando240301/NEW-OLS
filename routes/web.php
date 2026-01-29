@@ -61,4 +61,8 @@ Route::put('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'update'])
     ->name('tambahperalatan.update');
 Route::delete('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'destroy'])
     ->name('tambahperalatan.destroy');
+// Type Peralatan
 
+Route::get('/typeperalatan', [TypePeralatanController::class, 'index'])
+    ->middleware('auth')
+    ->name('typeperalatan');
