@@ -355,7 +355,7 @@ return [
                 ],
                 [
                     'text' => 'Kategori Peralatan',
-                    'url' => '#',
+                    'url' => '/kategoriperalatan',
                 ],
             ],
         ],

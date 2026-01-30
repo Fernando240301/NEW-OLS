@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\JenisPeralatanController;
 use App\Http\Controllers\TypePeralatanController;
+use App\Http\Controllers\KategoriPeralatanController;
 use Illuminate\Support\Facades\Route;
 
 // Tampilkan halaman login
@@ -80,3 +81,18 @@ Route::delete('/typeperalatan/{id}', [TypePeralatanController::class, 'destroy']
 Route::get('/typeperalatan', [TypePeralatanController::class, 'index'])
     ->middleware('auth')
     ->name('typeperalatan');
+
+//Kateogri Peralatan
+Route::get('/kategoriperalatan', [KategoriPeralatanController::class, 'index'])->name('kategoriperalatan.index');
+//tambah
+Route::get('/tambahkategori', [KategoriPeralatanController::class, 'create'])
+    ->middleware('auth')
+    ->name('tambahkategori');
+Route::post('/kategoriperalatan', [KategoriPeralatanController::class, 'store'])->name('kategoriperalatan.store');
+Route::delete('/kategoriperalatan/{id}', [KategoriPeralatanController::class, 'destroy'])->name('kategoriperalatan.destroy');
+//edit
+Route::get('/kategoriperalatan/{id}/edit', [KategoriPeralatanController::class, 'edit'])
+    ->name('tambahkategori.edit');
+    
+Route::put('/kategoriperalatan/{id}', [KategoriPeralatanController::class, 'update'])
+    ->name('tambahkategori.update');
