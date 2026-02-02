@@ -18,9 +18,9 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-    //  $this->call([
-    //     typeperalatanseeder::class,
-    //     ]);
+     $this->call([
+        typeperalatanseeder::class,
+        ]);
      $this->call([
         jenisperalatanseeder::class,
     ]);
