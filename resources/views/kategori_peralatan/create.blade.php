@@ -12,15 +12,14 @@
         <h3 class="card-title">Form Kategori Peralatan</h3>
     </div>
 
-    <form action="{{ route('kategoriperalatan.store') }}" method="POST">
+    <form action="{{ route('kategori_peralatan.store') }}" method="POST">
         @csrf
         <div class="card-body">
             <div class="form-group">
                 <label>Nama Kategori</label>
                 <input type="text" name="nama"
                        class="form-control @error('nama') is-invalid @enderror"
-                       value="{{ old('nama') }}"
-                       placeholder="Contoh: Generator Set">
+                       value="{{ old('nama') }}">
                 @error('nama')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -29,8 +28,7 @@
                 <label>Alias</label>
                 <input type="text" name="alias"
                        class="form-control @error('alias') is-invalid @enderror"
-                       value="{{ old('alias') }}"
-                       placeholder="Contoh: Generator Set">
+                       value="{{ old('alias') }}">
                 @error('alias')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -38,7 +36,7 @@
         </div>
 
         <div class="card-footer">
-            <a href="{{ route('tambahkategori') }}" class="btn btn-secondary">
+            <a href="{{ route('kategori_peralatan.index') }}" class="btn btn-secondary">
                 Kembali
             </a>
             <button type="submit" class="btn btn-primary float-right">

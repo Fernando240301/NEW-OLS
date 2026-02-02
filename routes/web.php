@@ -6,6 +6,8 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\JenisPeralatanController;
 use App\Http\Controllers\TypePeralatanController;
 use App\Http\Controllers\KategoriPeralatanController;
+use App\Http\Controllers\JenisLayananController;
+use App\Http\Controllers\MarketController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -61,37 +63,91 @@ Route::get('/activity-log', function () {
 //jenis peralatan
 Route::get('/jenis-peralatan', [JenisPeralatanController::class, 'index'])
     ->middleware('auth')
-    ->name('jenisperalatan');
+    ->name('jenis_peralatan.index');
 
-Route::get('/tambahperalatan', [JenisPeralatanController::class, 'create'])
-    ->middleware('auth')
-    ->name('tambahperalatan');
+//Tambah Data
+Route::get('/jenis_peralatan/create', [JenisPeralatanController::class, 'create'])->name('jenis_peralatan.create');
 
 Route::post('/tambahperalatan', [JenisPeralatanController::class, 'store'])
     ->middleware('auth')
-    ->name('tambahperalatan.store');
+    ->name('jenis_peralatan.store');
+
+//Update Data
+Route::get('/jenis-peralatan/{id}/edit', [JenisPeralatanController::class, 'edit'])
+    ->name('jenis_peralatan.edit');
+
+Route::put('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'update'])
+    ->name('jenis_peralatan.update');
+
+// Delete Data
+Route::delete('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'delete'])
+    ->name('jenis_peralatan.delete');
+
+// Kategori Peralatan
+Route::get('/kategori-peralatan', [KategoriPeralatanController::class, 'index'])->name('kategori_peralatan.index');
+
+// Tambah Data
+Route::get('/kategori_peralatan/create', [KategoriPeralatanController::class, 'create'])
+    ->middleware('auth')
+    ->name('kategori_peralatan.create');
+
+Route::post('/kategoriperalatan', [KategoriPeralatanController::class, 'store'])->name('kategori_peralatan.store');
+
+// Update Data
+Route::get('/kategori_peralatan/{id}/edit', [KategoriPeralatanController::class, 'edit'])
+    ->name('kategori_peralatan.edit');
+
+Route::put('/kategori_peralatan/{id}', [KategoriPeralatanController::class, 'update'])
+    ->name('kategori_peralatan.update');
+
+// Hapus Data
+Route::delete('/kategori_peralatan/{id}', [KategoriPeralatanController::class, 'delete'])->name('kategori_peralatan.delete');
 
 Route::get('/typeperalatan/create', [TypePeralatanController::class, 'create'])->name('typeperalatan.create');
 Route::post('/typeperalatan', [TypePeralatanController::class, 'store'])->name('typeperalatan.store');
 
+// Jenis Layanan
+Route::get('/jenis-layanan', [JenisLayananController::class, 'index'])->name('jenis_layanan.index');
+
+// Tambah Data
+Route::get('/jenis_layanan/create', [JenisLayananController::class, 'create'])
+    ->middleware('auth')
+    ->name('jenis_layanan.create');
+
+Route::post('/jenis_layanan', [JenisLayananController::class, 'store'])->name('jenis_layanan.store');
+
+// Update Data
+Route::get('/jenis_layanan/{id}/edit', [JenisLayananController::class, 'edit'])
+    ->name('jenis_layanan.edit');
+
+Route::put('/jenis_layanan/{id}', [JenisLayananController::class, 'update'])
+    ->name('jenis_layanan.update');
+
+// Hapus Data
+Route::delete('/jenis_layanan/{id}', [JenisLayananController::class, 'delete'])->name('jenis_layanan.delete');
+
+// Add/Edit/Delete Work Assignment
+Route::middleware('auth')->group(function () {
+    Route::get('/work-assignment', [MarketController::class, 'index'])->name('work_assignment.index');
+    Route::get('/work-assignment/create', [MarketController::class, 'create'])->name('work_assignment.create');
+    Route::post('/work-assignment', [MarketController::class, 'store'])->name('work_assignment.store');
+    Route::get('/work-assignment/{id}/edit', [MarketController::class, 'edit'])->name('work_assignment.edit');
+    Route::put('/work-assignment/{id}', [MarketController::class, 'update'])->name('work_assignment.update');
+    Route::delete('/work-assignment/{id}', [MarketController::class, 'delete'])->name('work_assignment.delete');
+});
+
+// Route::get('/typeperalatan/create', [TypePeralatanController::class, 'create'])->name('typeperalatan.create');
+// Route::post('/typeperalatan', [TypePeralatanController::class, 'store'])->name('typeperalatan.store');
+
 
 // Tampilkan form edit (alat)
-Route::get('/jenis-peralatan/{id}/edit', [JenisPeralatanController::class, 'edit'])
-    ->name('tambahperalatan.edit');
-
 Route::get('/typeperalatan/{id}/edit', [TypePeralatanController::class, 'edit'])
     ->name('tambahtype.edit');
 
-// Update(alat)
-Route::put('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'update'])
-    ->name('tambahperalatan.update');
-    
-Route::delete('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'destroy'])
-    ->name('tambahperalatan.destroy');
 //update (type)
 Route::put('/typeperalatan/{id}', [TypePeralatanController::class, 'update'])
     ->name('tambahtype.update');
-    
+
 Route::delete('/typeperalatan/{id}', [TypePeralatanController::class, 'destroy'])
     ->name('tambahtype.destroy');
 // Type Peralatan
@@ -99,17 +155,5 @@ Route::get('/typeperalatan', [TypePeralatanController::class, 'index'])
     ->middleware('auth')
     ->name('typeperalatan');
 
-//Kateogri Peralatan
-Route::get('/kategoriperalatan', [KategoriPeralatanController::class, 'index'])->name('kategoriperalatan.index');
 //tambah
-Route::get('/tambahkategori', [KategoriPeralatanController::class, 'create'])
-    ->middleware('auth')
-    ->name('tambahkategori');
-Route::post('/kategoriperalatan', [KategoriPeralatanController::class, 'store'])->name('kategoriperalatan.store');
-Route::delete('/kategoriperalatan/{id}', [KategoriPeralatanController::class, 'destroy'])->name('kategoriperalatan.destroy');
 //edit
-Route::get('/kategoriperalatan/{id}/edit', [KategoriPeralatanController::class, 'edit'])
-    ->name('tambahkategori.edit');
-    
-Route::put('/kategoriperalatan/{id}', [KategoriPeralatanController::class, 'update'])
-    ->name('tambahkategori.update');

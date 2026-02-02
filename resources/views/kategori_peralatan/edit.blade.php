@@ -8,7 +8,7 @@
         <h3 class="card-title">Edit Kategori</h3>
     </div>
     <div class="card-body">
-       <form action="{{ route('tambahkategori.update', $item->id) }}" method="POST">
+       <form action="{{ route('kategori_peralatan.update', $item->id) }}" method="POST">
     @csrf
     @method('PUT')
 
@@ -22,7 +22,7 @@
     </div>
 
     <button type="submit" class="btn btn-success mt-2">Update</button>
-    <a href="{{ route('kategoriperalatan.index') }}" class="btn btn-secondary mt-2">Batal</a>
+    <a href="{{ route('kategori_peralatan.index') }}" class="btn btn-secondary mt-2">Batal</a>
 </form>
 
     </div>

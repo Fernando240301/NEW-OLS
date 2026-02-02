@@ -16,16 +16,37 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        //Klasifikasi Client
         $this->call([
             RefKlasifikasiClientSeeder::class,
         ]);
         // User::factory(10)->create();
 
-     $this->call([
-        typeperalatanseeder::class,
+        //Referensi Jenis Peralatan
+        $this->call([
+            RefJenisPeralatanSeeder::class,
         ]);
-     $this->call([
-        jenisperalatanseeder::class,
-    ]);
+
+        //Referensi Kategori Peralatan
+        $this->call([
+            RefKategoriPeralatanSeeder::class,
+        ]);
+
+        //Referensi Jenis Ijin
+        $this->call([
+            RefJnsIjinSeeder::class,
+        ]);
+
+        //Referensi Jenis Layanan
+        $this->call([
+            RefJnsLayananSeeder::class,
+        ]);
+
+    //  $this->call([
+    //     typeperalatanseeder::class,
+    //     ]);
+    //  $this->call([
+    //     jenisperalatanseeder::class,
+    // ]);
     }
 }
