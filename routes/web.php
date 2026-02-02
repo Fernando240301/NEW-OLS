@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\JenisPeralatanController;
+use App\Http\Controllers\TypePeralatanController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -69,13 +70,30 @@ Route::post('/tambahperalatan', [JenisPeralatanController::class, 'store'])
     ->middleware('auth')
     ->name('tambahperalatan.store');
 
-// Tampilkan form edit
+Route::get('/typeperalatan/create', [TypePeralatanController::class, 'create'])->name('typeperalatan.create');
+Route::post('/typeperalatan', [TypePeralatanController::class, 'store'])->name('typeperalatan.store');
+
+
+// Tampilkan form edit (alat)
 Route::get('/jenis-peralatan/{id}/edit', [JenisPeralatanController::class, 'edit'])
     ->name('tambahperalatan.edit');
 
-// Update
+Route::get('/typeperalatan/{id}/edit', [TypePeralatanController::class, 'edit'])
+    ->name('tambahtype.edit');
+
+// Update(alat)
 Route::put('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'update'])
     ->name('tambahperalatan.update');
+    
 Route::delete('/jenis-peralatan/{id}', [JenisPeralatanController::class, 'destroy'])
     ->name('tambahperalatan.destroy');
-
+//update (type)
+Route::put('/typeperalatan/{id}', [TypePeralatanController::class, 'update'])
+    ->name('tambahtype.update');
+    
+Route::delete('/typeperalatan/{id}', [TypePeralatanController::class, 'destroy'])
+    ->name('tambahtype.destroy');
+// Type Peralatan
+Route::get('/typeperalatan', [TypePeralatanController::class, 'index'])
+    ->middleware('auth')
+    ->name('typeperalatan');

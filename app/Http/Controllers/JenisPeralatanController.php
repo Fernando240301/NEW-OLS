@@ -10,7 +10,7 @@ class JenisPeralatanController extends Controller
     public function index()
     {
         $data = JenisPeralatan::all();
-        return view('JenisPeralatan', compact('data'));
+        return view('jenisperalatan', compact('data'));
     }
     public function create()
     {
