@@ -7,13 +7,27 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Project;
+use App\Models\RefJenisPeralatan;
+use App\Models\RefTipePeralatan;
+use App\Models\KategoriPeralatan;
+use App\Models\ScopeofWork;
 
 class MarketController extends Controller
 {
     public function index()
     {
         $data = Project::all();
-        return view('work_assignment.index', compact('data'));
+
+        $jenisPeralatan = RefJenisPeralatan::orderBy('id')->get();
+        $tipePeralatan  = RefTipePeralatan::orderBy('id')->get();
+        $kategoriPeralatan = KategoriPeralatan::orderBy('id')->get();
+
+        return view('work_assignment.index', compact(
+            'data',
+            'jenisPeralatan',
+            'tipePeralatan',
+            'kategoriPeralatan'
+        ));
     }
 
     //Add Client
@@ -221,5 +235,65 @@ class MarketController extends Controller
         return redirect()
             ->route('client.index')
             ->with('success', 'Data client berhasil dihapus');
+    }
+
+    public function storeScope(Request $request)
+    {
+        $request->validate([
+            'workflowid' => 'required|exists:app_workflow,workflowid',
+            'scope'      => 'required|array|min:1',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $keepIds = [];
+
+            foreach ($request->scope as $row) {
+
+                if (empty($row['jenis']) || empty($row['tipe'])) {
+                    continue;
+                }
+
+                $data = [
+                    'workflowid' => $request->workflowid,
+                    'lokasi'     => $row['lokasi'] ?? null,
+                    'item'       => null,
+                    'jenis'      => $row['jenis'],
+                    'tipe'       => $row['tipe'],
+                    'kategori'   => $row['kategori'] ?? null,
+                    'jumlah'     => (int) ($row['jumlah'] ?? 1),
+                    'harga'      => str_replace('.', '', $row['harga'] ?? 0),
+                ];
+
+                // 🔑 UPDATE jika ada ID
+                if (!empty($row['id'])) {
+                    ScopeofWork::where('id', $row['id'])->update($data);
+                    $keepIds[] = $row['id'];
+                }
+                // 🆕 INSERT jika tidak ada ID
+                else {
+                    $new = ScopeofWork::create($data);
+                    $keepIds[] = $new->id;
+                }
+            }
+
+            // 🗑️ DELETE row lama yang tidak dikirim
+            ScopeofWork::where('workflowid', $request->workflowid)
+                ->whereNotIn('id', $keepIds)
+                ->delete();
+
+            DB::commit();
+            return back()->with('success', 'Scope of Work berhasil diperbarui');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+
+    public function getScope($workflowid)
+    {
+        return ScopeofWork::where('workflowid', $workflowid)->get();
     }
 }

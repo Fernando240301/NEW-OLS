@@ -27,6 +27,11 @@ class DatabaseSeeder extends Seeder
             RefJenisPeralatanSeeder::class,
         ]);
 
+        //Referensi Tipe Peralatan
+        $this->call([
+            RefTipePeralatanSeeder::class,
+        ]);
+
         //Referensi Kategori Peralatan
         $this->call([
             RefKategoriPeralatanSeeder::class,
@@ -42,11 +47,11 @@ class DatabaseSeeder extends Seeder
             RefJnsLayananSeeder::class,
         ]);
 
-    //  $this->call([
-    //     typeperalatanseeder::class,
-    //     ]);
-    //  $this->call([
-    //     jenisperalatanseeder::class,
-    // ]);
+        //  $this->call([
+        //     typeperalatanseeder::class,
+        //     ]);
+        //  $this->call([
+        //     jenisperalatanseeder::class,
+        // ]);
     }
 }

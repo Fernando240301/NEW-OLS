@@ -134,6 +134,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/work-assignment/{id}/edit', [MarketController::class, 'edit'])->name('work_assignment.edit');
     Route::put('/work-assignment/{id}', [MarketController::class, 'update'])->name('work_assignment.update');
     Route::delete('/work-assignment/{id}', [MarketController::class, 'delete'])->name('work_assignment.delete');
+
+    Route::post('/work-assignment/scope/store', [MarketController::class, 'storeScope'])->name('work_assignment.scope.store');
+    Route::get('/work-assignment/{workflowid}/scope', [MarketController::class, 'getScope'])->middleware('auth');
 });
 
 // Route::get('/typeperalatan/create', [TypePeralatanController::class, 'create'])->name('typeperalatan.create');
