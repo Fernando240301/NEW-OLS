@@ -11,6 +11,9 @@ use App\Models\RefJenisPeralatan;
 use App\Models\RefTipePeralatan;
 use App\Models\KategoriPeralatan;
 use App\Models\ScopeofWork;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+
 
 class MarketController extends Controller
 {
@@ -30,7 +33,7 @@ class MarketController extends Controller
         ));
     }
 
-    //Add Client
+    //Add Project
     public function create()
     {
         $namaclient = DB::table('pemohon')
@@ -110,10 +113,16 @@ class MarketController extends Controller
                 'lokasi_lapangan'    => $request->lokasi_lapangan,
                 'harga_kontrak'      => $request->harga_kontrak,
                 'contact_person'     => $request->contact_person,
+                'bastp'              => $request->bastp,
+                'paymentapproval'    => $request->paymentapproval,
+                'copylampiranc'      => $request->copylampiranc,
+                'copylampirand'      => $request->copylampirand,
                 'no_hp'              => $request->no_hp,
                 'contact_person1'    => $request->contact_person1,
                 'no_hp1'             => $request->no_hp1,
                 'email'              => $request->email,
+                'lokasiujipsv'       => $request->lokasiujipsv,
+                'pidp'               => $request->pidp,
                 'mobdemob'           => $request->mobdemob,
                 'akomodasi'          => $request->akomodasi,
                 'lokaltransport'     => $request->lokaltransport,
@@ -168,73 +177,183 @@ class MarketController extends Controller
         }
     }
 
-    //Edit Client
+    //Edit Project
     public function edit($id)
     {
-        $client = DB::table('pemohon')
-            ->where('pemohonid', $id)
+        $app_workflow = DB::table('app_workflow')
+            ->where('workflowid', $id)
             ->first();
 
-        if (!$client) {
+        if (!$app_workflow) {
             abort(404);
         }
 
-        $klasifikasi = DB::table('ref_klasifikasi_client')
-            ->orderBy('nama')
+        // 🔑 decode workflowdata
+        $workflowdata = json_decode($app_workflow->workflowdata, true);
+
+        //Nama Client
+        $namaclient = DB::table('pemohon')
+            ->orderBy('pemohonid')
             ->get();
 
-        return view('client.edit', compact('client', 'klasifikasi'));
+        return view('work_assignment.edit', compact('app_workflow', 'workflowdata', 'namaclient'));
     }
 
     public function update(Request $request, $id)
     {
         $request->validate([
-            'nama_perusahaan' => 'required|string|max:255',
-            'klasifikasi'     => 'required',
-            'email_pemohon'   => 'required|email',
+            'project_type' => 'required',
+            'projectname'  => 'required|string',
+            'client'       => 'required',
+            'files'        => 'nullable|array',
+            'files.*'      => 'file|mimes:pdf,doc,docx,xls,xlsx|max:5120',
         ]);
 
-        DB::table('pemohon')
-            ->where('pemohonid', $id)
-            ->update([
-                'nama_perusahaan'     => $request->nama_perusahaan,
-                'klasifikasi'         => $request->klasifikasi,
-                'email_pemohon'       => $request->email_pemohon,
-                'alamat_perusahaan'   => $request->alamat_perusahaan,
-                'kota_perusahaan'     => $request->kota_perusahaan,
-                'provinsi_perusahaan' => $request->provinsi_perusahaan,
-                'negara'              => $request->negara,
-                'kode_pos'            => $request->kode_pos,
-                'telp_perusahaan'     => $request->telp_perusahaan,
-                'contact1'            => $request->contact1,
-                'contact_celluler1'   => $request->contact_celluler1,
-                'contact2'            => $request->contact2,
-                'contact_celluler2'   => $request->contact_celluler2,
-                'contact3'            => $request->contact3,
-                'contact_celluler3'   => $request->contact_celluler3,
+        DB::beginTransaction();
+
+        try {
+            // ambil data lama
+            $app = DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$app) {
+                abort(404);
+            }
+
+            $workflowdata = json_decode($app->workflowdata, true) ?? [];
+
+            /* =========================
+         * 1. HANDLE FILE LAMA
+         * ========================= */
+            $existingFiles = $workflowdata['lampiran_kontrak'] ?? [];
+
+            // hapus file yang dicentang
+            if ($request->filled('delete_files')) {
+                foreach ($request->delete_files as $file) {
+                    Storage::delete('public/kontrak/' . $file);
+                    $existingFiles = array_values(
+                        array_diff($existingFiles, [$file])
+                    );
+                }
+            }
+
+            /* =========================
+         * 2. UPLOAD FILE BARU
+         * ========================= */
+            $newFiles = [];
+
+            if ($request->hasFile('files')) {
+                foreach ($request->file('files') as $file) {
+                    $original = str_replace(' ', '_', $file->getClientOriginalName());
+                    $filename = now()->format('Ymd_His') . '_' . $original;
+
+                    $file->storeAs('public/kontrak', $filename);
+                    $newFiles[] = $filename;
+                }
+            }
+
+            /* =========================
+         * 3. UPDATE WORKFLOWDATA
+         * ========================= */
+            $workflowdata = array_merge($workflowdata, [
+                'project_type'     => $request->project_type,
+                'projectname'      => $request->projectname,
+                'client'           => $request->client,
+                'no_kontrak'       => $request->no_kontrak,
+                'tanggal_kontrak'  => $request->tanggal_kontrak,
+                'tanggal_akhir'    => $request->tanggal_akhir,
+                'lokasi_kantor'    => $request->lokasi_kantor,
+                'lokasi_lapangan'  => $request->lokasi_lapangan,
+                'harga_kontrak'    => $request->harga_kontrak,
+                'contact_person'   => $request->contact_person,
+                'no_hp'            => $request->no_hp,
+                'contact_person1'  => $request->contact_person1,
+                'no_hp1'           => $request->no_hp1,
+                'email'            => $request->email,
+                'lokasiujipsv'     => $request->lokasiujipsv,
+                'pidp'             => $request->pidp,
+                'mobdemob'         => $request->mobdemob,
+                'akomodasi'        => $request->akomodasi,
+                'lokaltransport'   => $request->lokaltransport,
+                'meals'            => $request->meals,
+                'invoiceasli'      => $request->invoiceasli,
+                'bastp'              => $request->bastp,
+                'paymentapproval'    => $request->paymentapproval,
+                'copylampiranc'      => $request->copylampiranc,
+                'copylampirand'      => $request->copylampirand,
+                'efaktur'          => $request->efaktur,
+                'enova'            => $request->enova,
+                'performancebond'  => $request->performancebond,
+                'lampiranhse'      => $request->lampiranhse,
+
+                // gabungkan file lama + baru
+                'lampiran_kontrak' => array_merge($existingFiles, $newFiles),
             ]);
 
-        return redirect()
-            ->route('client.index')
-            ->with('success', 'Data client berhasil diperbarui');
+            /* =========================
+         * 4. UPDATE TABLE app_workflow
+         * ========================= */
+            DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->update([
+                    'projectname'  => $request->projectname,
+                    'client'       => $request->client,
+                    'last_update'  => now(),
+                    'workflowdata' => json_encode($workflowdata),
+                ]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('work_assignment.index')
+                ->with('success', 'Project berhasil diperbarui');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()
+                ->with('error', $e->getMessage())
+                ->withInput();
+        }
     }
 
-    // Delete Client
+
+    // Delete Work Assignment
     public function delete($id)
     {
-        $deleted = DB::table('pemohon')
-            ->where('pemohonid', $id)
-            ->delete();
+        DB::beginTransaction();
 
-        if (!$deleted) {
+        try {
+            $workflow = DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->first();
+
+            if (!$workflow) {
+                return redirect()
+                    ->route('work_assignment.index')
+                    ->with('error', 'Data Project tidak ditemukan');
+            }
+
+            DB::table('app_workflow_deleted')->insert([
+                (array) $workflow + [
+                    'deleted_at' => now(),
+                    'deleted_by' => Auth::user()->username ?? 'system',
+                ]
+            ]);
+
+            DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->delete();
+
+            DB::commit();
+
             return redirect()
-                ->route('client.index')
-                ->with('error', 'Data client tidak ditemukan');
+                ->route('work_assignment.index')
+                ->with('success', 'Data Project berhasil dihapus');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
         }
-
-        return redirect()
-            ->route('client.index')
-            ->with('success', 'Data client berhasil dihapus');
     }
 
     public function storeScope(Request $request)
@@ -295,5 +414,42 @@ class MarketController extends Controller
     public function getScope($workflowid)
     {
         return ScopeofWork::where('workflowid', $workflowid)->get();
+    }
+
+    public function pdf($id)
+    {
+        $project = Project::with('clientRel')->findOrFail($id);
+
+        $workflow = json_decode($project->workflowdata, true) ?? [];
+
+        $scope = ScopeofWork::with([
+            'jenisRel',
+            'kategoriRel',
+            'tipeRel' // optional
+        ])
+            ->where('workflowid', $id)
+            ->get();
+
+
+        $issuedDate = !empty($workflow['tanggal_kontrak'])
+            ? Carbon::parse($workflow['tanggal_kontrak'])
+            ->locale('en')
+            ->translatedFormat('d F Y')
+            : '-';
+
+        $expiredDate = !empty($workflow['tanggal_akhir'])
+            ? Carbon::parse($workflow['tanggal_akhir'])
+            ->locale('en')
+            ->translatedFormat('d F Y')
+            : '-';
+
+        $pdf = Pdf::loadView(
+            'work_assignment.pdf',
+            compact('project', 'workflow', 'scope', 'issuedDate', 'expiredDate')
+        )->setPaper('A4', 'portrait');
+
+        return $pdf->stream(
+            'Work_Assignment_' . ($workflow['project_number'] ?? $id) . '.pdf'
+        );
     }
 }

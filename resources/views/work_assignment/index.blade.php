@@ -46,27 +46,32 @@
                 <tbody>
                     @foreach ($data as $row)
                         <tr>
-                            <td>
-                                <a href="#" class="btn btn-warning btn-sm">
-                                    <i class="fas fa-edit"></i>
-                                </a>
+                            <td class="aksi-cell">
+                                <div class="aksi-grid">
+                                    <a href="{{ route('work_assignment.pdf', $row->workflowid) }}"
+                                        class="btn btn-danger btn-xs" target="_blank">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>
 
-                                <form action="#" method="POST" style="display:inline"
-                                    onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                                    @csrf
-                                    @method('DELETE')
-
-                                    <button class="btn btn-danger btn-sm">
-                                        <i class="fas fa-trash"></i>
+                                    <button class="btn btn-primary btn-xs" data-toggle="modal" data-target="#scopeModal"
+                                        data-project="{{ $row->workflowid }}">
+                                        <i class="fas fa-tools"></i>
                                     </button>
-                                </form>
 
+                                    <a href="{{ route('work_assignment.edit', $row->workflowid) }}"
+                                        class="btn btn-warning btn-xs">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
 
-                                <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#scopeModal"
-                                    data-project="{{ $row->workflowid }}">
-                                    <i class="fas fa-tools"></i>
-                                </button>
-
+                                    <form action="{{ route('work_assignment.delete', $row->workflowid) }}" method="POST"
+                                        onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-danger btn-xs">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                             <td>{{ $row->project_number }}</td>
                             <td>{{ $row->client_name }}</td>
@@ -441,6 +446,34 @@
         /* Modal footer */
         .modal-footer {
             justify-content: space-between;
+        }
+
+        /* kolom aksi */
+        .aksi-cell {
+            padding-top: 6px !important;
+            padding-bottom: 6px !important;
+            vertical-align: middle !important;
+        }
+
+        /* grid tombol 2x2 */
+        .aksi-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            /* jarak antar tombol */
+        }
+
+        /* tombol kecil & rapi */
+        .aksi-grid .btn {
+            padding: 4px 6px;
+            font-size: 12px;
+            line-height: 1;
+            border-radius: 4px;
+        }
+
+        /* form jangan nambah tinggi */
+        .aksi-grid form {
+            margin: 0;
         }
     </style>
 @endpush

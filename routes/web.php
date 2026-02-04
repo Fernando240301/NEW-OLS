@@ -137,6 +137,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/work-assignment/scope/store', [MarketController::class, 'storeScope'])->name('work_assignment.scope.store');
     Route::get('/work-assignment/{workflowid}/scope', [MarketController::class, 'getScope'])->middleware('auth');
+
+    Route::get('/work-assignment/{id}/pdf', [MarketController::class, 'pdf'])->name('work_assignment.pdf');
 });
 
 // Route::get('/typeperalatan/create', [TypePeralatanController::class, 'create'])->name('typeperalatan.create');

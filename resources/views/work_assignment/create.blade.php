@@ -94,6 +94,11 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="text" name="email" class="form-control">
+                </div>
+
+                <div class="form-group">
                     <label>Contact Person SA/SE/SR</label>
                     <input type="text" name="contact_person1" class="form-control">
                 </div>
@@ -104,8 +109,14 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="text" name="email" class="form-control">
+                    <label>Lokasi Pengujian PSV</label>
+                    <input type="text" name="lokasiujipsv" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="pidp">Termin Pembayaran</label>
+                    <textarea name="pidp" id="pidp" class="form-control" rows="3"
+                        placeholder="Silahkan masukan Termin Pembayaran"></textarea>
                 </div>
 
                 <hr>
@@ -153,6 +164,42 @@
                 <div class="form-group">
                     <label>Invoice Asli</label>
                     <select name="invoiceasli" id="invoiceasli" class="form-control">
+                        <option value="">-- Pilih --</option>
+                        <option value="Tidak">Tidak</option>
+                        <option value="Iya">Iya</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>BAST/BASTP</label>
+                    <select name="bastp" id="bastp" class="form-control">
+                        <option value="">-- Pilih --</option>
+                        <option value="Tidak">Tidak</option>
+                        <option value="Iya">Iya</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Approval</label>
+                    <select name="paymentapproval" id="paymentapproval" class="form-control">
+                        <option value="">-- Pilih --</option>
+                        <option value="Tidak">Tidak</option>
+                        <option value="Iya">Iya</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Copy Lampiran C</label>
+                    <select name="copylampiranc" id="copylampiranc" class="form-control">
+                        <option value="">-- Pilih --</option>
+                        <option value="Tidak">Tidak</option>
+                        <option value="Iya">Iya</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Copy Lampiran D</label>
+                    <select name="copylampirand" id="copylampirand" class="form-control">
                         <option value="">-- Pilih --</option>
                         <option value="Tidak">Tidak</option>
                         <option value="Iya">Iya</option>
