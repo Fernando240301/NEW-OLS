@@ -12,8 +12,12 @@ use App\Models\RefTipePeralatan;
 use App\Models\KategoriPeralatan;
 use App\Models\ScopeofWork;
 use Barryvdh\DomPDF\Facade\Pdf;
+use setasign\Fpdi\Tcpdf\Fpdi as TcpdfFpdi;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WorkAssignmentApprovalMail;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class MarketController extends Controller
 {
@@ -451,5 +455,241 @@ class MarketController extends Controller
         return $pdf->stream(
             'Work_Assignment_' . ($workflow['project_number'] ?? $id) . '.pdf'
         );
+    }
+
+    public function previewGabungan($id)
+    {
+        $project = Project::with('clientRel')->findOrFail($id);
+
+        $workflow = json_decode($project->workflowdata, true) ?? [];
+
+        $scope = ScopeofWork::with([
+            'jenisRel',
+            'kategoriRel',
+            'tipeRel' // optional
+        ])
+            ->where('workflowid', $id)
+            ->get();
+
+
+        $issuedDate = !empty($workflow['tanggal_kontrak'])
+            ? Carbon::parse($workflow['tanggal_kontrak'])
+            ->locale('en')
+            ->translatedFormat('d F Y')
+            : '-';
+
+        $expiredDate = !empty($workflow['tanggal_akhir'])
+            ? Carbon::parse($workflow['tanggal_akhir'])
+            ->locale('en')
+            ->translatedFormat('d F Y')
+            : '-';
+
+        // === 1. Generate WA PDF ke temp ===
+        $waPdf = Pdf::loadView(
+            'work_assignment.pdf',
+            compact('project', 'workflow', 'scope', 'issuedDate', 'expiredDate')
+        )->setPaper('A4', 'portrait');
+
+        $dir = storage_path('app/temp');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0777, true);
+        }
+
+        $waPath = "{$dir}/wa_{$id}.pdf";
+        $waPdf->save($waPath);
+
+        // === 2. FPDI (TCPDF) ===
+        $pdf = new TcpdfFpdi();
+        $pdf->SetAutoPageBreak(true, 10);
+
+        // Import WA
+        $pageCount = $pdf->setSourceFile($waPath);
+        for ($i = 1; $i <= $pageCount; $i++) {
+            $tpl = $pdf->importPage($i);
+            $pdf->AddPage();
+            $pdf->useTemplate($tpl);
+        }
+
+        // === 3. Gabung kontrak ===
+        foreach ($workflow['lampiran_kontrak'] ?? [] as $file) {
+            $path = storage_path("app/private/public/kontrak/{$file}");
+            if (!file_exists($path)) continue;
+
+            $pages = $pdf->setSourceFile($path);
+            for ($i = 1; $i <= $pages; $i++) {
+                $tpl = $pdf->importPage($i);
+                $pdf->AddPage();
+                $pdf->useTemplate($tpl);
+            }
+        }
+
+        // === 4. Stream ===
+        $content = $pdf->Output('', 'S');
+
+        return response($content)
+            ->header('Content-Type', 'application/pdf');
+    }
+
+    private function generatePdfGabungan(int $workflowId): string
+    {
+        $project = Project::with('clientRel')->findOrFail($workflowId);
+        $workflow = json_decode($project->workflowdata, true) ?? [];
+
+        $scope = ScopeofWork::with(['jenisRel', 'kategoriRel', 'tipeRel'])
+            ->where('workflowid', $workflowId)
+            ->get();
+
+        $issuedDate = !empty($workflow['tanggal_kontrak'])
+            ? Carbon::parse($workflow['tanggal_kontrak'])->translatedFormat('d F Y')
+            : '-';
+
+        $expiredDate = !empty($workflow['tanggal_akhir'])
+            ? Carbon::parse($workflow['tanggal_akhir'])->translatedFormat('d F Y')
+            : '-';
+
+        // 1. WA PDF
+        $waPdf = Pdf::loadView(
+            'work_assignment.pdf',
+            compact('project', 'workflow', 'scope', 'issuedDate', 'expiredDate')
+        );
+
+        $dir = storage_path('app/temp');
+        if (!is_dir($dir)) mkdir($dir, 0777, true);
+
+        $waPath = "{$dir}/wa_{$workflowId}.pdf";
+        $waPdf->save($waPath);
+
+        // 2. FPDI
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
+        $pdf->SetAutoPageBreak(true, 10);
+
+        // import WA
+        $pageCount = $pdf->setSourceFile($waPath);
+        for ($i = 1; $i <= $pageCount; $i++) {
+            $tpl = $pdf->importPage($i);
+            $pdf->AddPage();
+            $pdf->useTemplate($tpl);
+        }
+
+        // import kontrak
+        foreach ($workflow['lampiran_kontrak'] ?? [] as $file) {
+            $path = storage_path("app/private/public/kontrak/{$file}");
+            if (!file_exists($path)) continue;
+
+            $pages = $pdf->setSourceFile($path);
+            for ($i = 1; $i <= $pages; $i++) {
+                $tpl = $pdf->importPage($i);
+                $pdf->AddPage();
+                $pdf->useTemplate($tpl);
+            }
+        }
+
+        $finalPath = "{$dir}/WA_Gabungan_{$workflowId}.pdf";
+        file_put_contents($finalPath, $pdf->Output('', 'S'));
+
+        return $finalPath;
+    }
+
+
+    public function verifikasiIndex()
+    {
+        $data = DB::table('app_workflow as w')
+            ->join('pemohon as p', 'p.pemohonid', '=', 'w.client')
+            ->whereNull('apv_mm')
+            ->orderBy('createtime', 'asc')
+            ->get();
+
+        return view('verifikasi.work_assignment.index', compact('data'));
+    }
+
+    public function approveMM($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $workflow = DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$workflow) {
+                return back()->with('error', 'Data tidak ditemukan');
+            }
+
+            if (!is_null($workflow->apv_mm)) {
+                return back()->with('error', 'Data sudah diverifikasi MM');
+            }
+
+            // 🔐 TOKEN
+            $token = Str::uuid()->toString();
+
+            DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->update([
+                    'apv_mm'        => 1,
+                    'date_mm'       => now(),
+                    'apv_token'     => $token,
+
+                    'last_username' => Auth::user()->username ?? 'system',
+                    'last_update'   => now(),
+                    'last_status'   => 'approved_mm',
+
+                    'next_taskname' => 'verifikasi_mo',
+                    'next_stepname' => 'step_mo',
+                    'next_rolename' => 'manager_operasi',
+                    'next_status'   => 'proses',
+                ]);
+
+            DB::commit();
+
+            // ===============================
+            // ⬇️ BARU SETELAH COMMIT
+            // ===============================
+
+            // 📄 GENERATE PDF GABUNGAN
+            DB::commit();
+
+            // === GENERATE PDF GABUNGAN (WAJIB) ===
+            $pdfPath = $this->generatePdfGabungan($id);
+
+            // === EMAIL MO ===
+            try {
+                Log::info('MULAI KIRIM EMAIL MO');
+                Mail::to('andreandfernando12@gmail.com')->send(
+                    new WorkAssignmentApprovalMail(
+                        json_decode($workflow->workflowdata, true),
+                        $token,
+                        'mo',
+                        $pdfPath
+                    )
+                );
+                Log::info('EMAIL MO TERKIRIM');
+            } catch (\Throwable $e) {
+                Log::error('EMAIL MO GAGAL', ['error' => $e->getMessage()]);
+            }
+
+            // === EMAIL MF ===
+            try {
+                Log::info('MULAI KIRIM EMAIL MF');
+                Mail::to('andreandfernando27@gmail.com')->send(
+                    new WorkAssignmentApprovalMail(
+                        json_decode($workflow->workflowdata, true),
+                        $token,
+                        'mf',
+                        $pdfPath
+                    )
+                );
+                Log::info('EMAIL MF TERKIRIM');
+            } catch (\Throwable $e) {
+                Log::error('EMAIL MF GAGAL', ['error' => $e->getMessage()]);
+            }
+
+            return redirect()
+                ->route('verifikasi.work_assignment')
+                ->with('success', 'Work Assignment berhasil di-approve & email terkirim');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

@@ -48,7 +48,7 @@
                         <tr>
                             <td class="aksi-cell">
                                 <div class="aksi-grid">
-                                    <a href="{{ route('work_assignment.pdf', $row->workflowid) }}"
+                                    <a href="{{ route('verifikasi.preview', $row->workflowid) }}"
                                         class="btn btn-danger btn-xs" target="_blank">
                                         <i class="fas fa-file-pdf"></i>
                                     </a>

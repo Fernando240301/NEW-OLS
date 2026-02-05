@@ -10,6 +10,9 @@ use App\Http\Controllers\JenisLayananController;
 use App\Http\Controllers\MarketController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\ApprovalController;
+use Illuminate\Support\Facades\Mail;
+
 
 // Tampilkan halaman login
 Route::get('/', [AuthController::class, 'login'])->name('login');
@@ -139,7 +142,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/work-assignment/{workflowid}/scope', [MarketController::class, 'getScope'])->middleware('auth');
 
     Route::get('/work-assignment/{id}/pdf', [MarketController::class, 'pdf'])->name('work_assignment.pdf');
+    Route::get('/verifikasi/work-assignment/{id}/preview', [MarketController::class, 'previewGabungan'])->name('verifikasi.preview');
 });
+
+// Verifikasi WA
+Route::get('/verifikasi/work-assignment', [MarketController::class, 'verifikasiIndex'])->name('verifikasi.work_assignment');
+Route::post('/verifikasi/work-assignment/{id}/approve', [MarketController::class, 'approveMM'])->name('verifikasi.mm.approve');
+
+Route::get('/approval/mo/{token}', [ApprovalController::class, 'approveMO'])
+    ->name('approval.mo');
+
+Route::get('/approval/mf/{token}', [ApprovalController::class, 'approveMF'])
+    ->name('approval.mf');
+
 
 // Route::get('/typeperalatan/create', [TypePeralatanController::class, 'create'])->name('typeperalatan.create');
 // Route::post('/typeperalatan', [TypePeralatanController::class, 'store'])->name('typeperalatan.store');

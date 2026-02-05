@@ -337,9 +337,14 @@ return [
         //     'icon' => 'fas fa-fw fa-user',
         // ],
         [
-            'text' => 'Client',
-            'url' => 'client',
-            'icon' => 'fas fa-fw fa-user',
+            'text' => 'Verifikasi',
+            'icon' => 'fas fa-fw fa-check-circle',
+            'submenu' => [
+                [
+                    'text' => 'Verifikasi WA',
+                    'route' => 'verifikasi.work_assignment', // ⬅️ PAKAI NAME ROUTE
+                ],
+            ],
         ],
         [
             'text' => 'Market',
@@ -350,6 +355,11 @@ return [
                     'url'  => '/work-assignment',
                 ],
             ],
+        ],
+        [
+            'text' => 'Client',
+            'url' => 'client',
+            'icon' => 'fas fa-fw fa-user',
         ],
         [
             'text' => 'System',
