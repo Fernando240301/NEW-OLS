@@ -349,6 +349,14 @@ return [
                     'text' => 'Work Assignment',
                     'url'  => '/work-assignment',
                 ],
+                [
+                    'text' => 'Prospect',
+                    'url'  => '/prospect',
+                ],
+                [
+                    'text' => 'Draft Penawaran',
+                    'url'  => '/penawaran',
+                ],
             ],
         ],
         [
