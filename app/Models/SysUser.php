@@ -8,6 +8,7 @@ class SysUser extends Authenticatable
 {
     protected $table = 'sys_users';
     protected $primaryKey = 'userid';
+    protected $keyType = 'int';        // atau 'string' sesuai tipe kolom
     public $timestamps = false;
 
     protected $fillable = [
