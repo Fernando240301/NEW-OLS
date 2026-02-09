@@ -85,11 +85,11 @@
                         placeholder="Silahkan masukan Alamat Kantor">{{ old('lokasi_kantor', $workflowdata['lokasi_kantor'] ?? '') }}</textarea>
                 </div>
 
-                <div class="form-group">
+                {{-- <div class="form-group">
                     <label for="alamat_perusahaan">Site Address</label>
                     <textarea name="lokasi_lapangan" id="lokasi_lapangan" class="form-control" rows="3"
                         placeholder="Silahkan masukan Alamat Site">{{ old('lokasi_lapangan', $workflowdata['lokasi_lapangan'] ?? '') }}</textarea>
-                </div>
+                </div> --}}
 
                 <div class="form-group">
                     <label>Contact Person Client</label>

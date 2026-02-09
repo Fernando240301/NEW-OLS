@@ -23,7 +23,7 @@ class MarketController extends Controller
 {
     public function index()
     {
-        $data = Project::all();
+        $data = Project::orderBy('workflowid', 'desc')->get();
 
         $jenisPeralatan = RefJenisPeralatan::orderBy('id')->get();
         $tipePeralatan  = RefTipePeralatan::orderBy('id')->get();

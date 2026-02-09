@@ -357,6 +357,16 @@ return [
             ],
         ],
         [
+            'text' => 'Operation',
+            'icon' => 'fas fa-fw fa-cogs',
+            'submenu' => [
+                [
+                    'text' => 'Project List',
+                    'url'  => '/project-list',
+                ],
+            ],
+        ],
+        [
             'text' => 'Client',
             'url' => 'client',
             'icon' => 'fas fa-fw fa-user',

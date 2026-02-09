@@ -8,6 +8,7 @@ use App\Http\Controllers\TypePeralatanController;
 use App\Http\Controllers\KategoriPeralatanController;
 use App\Http\Controllers\JenisLayananController;
 use App\Http\Controllers\MarketController;
+use App\Http\Controllers\OperationController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
@@ -154,6 +155,16 @@ Route::get('/approval/mo/{token}', [ApprovalController::class, 'approveMO'])
 
 Route::get('/approval/mf/{token}', [ApprovalController::class, 'approveMF'])
     ->name('approval.mf');
+
+// Project List
+Route::middleware('auth')->group(function () {
+    Route::get('/project-list', [OperationController::class, 'index'])->name('project_list.index');
+    Route::get('/project-list/{id}/detail', [OperationController::class, 'detail'])->name('project_list.detail');
+    Route::get('/project-list/scope/get', [OperationController::class, 'getScope'])->name('project_list.scope.get');
+    Route::get('/kontrak/view/{filename}', [OperationController::class, 'viewKontrak'])->where('filename', '.*')->name('kontrak.view');
+    Route::post('/project-list/file/upload', [OperationController::class, 'uploadMarketingFile'])->name('project_list.file.upload');
+    
+});
 
 
 // Route::get('/typeperalatan/create', [TypePeralatanController::class, 'create'])->name('typeperalatan.create');

@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import "bootstrap/dist/css/bootstrap.min.css";
+
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -9,4 +9,54 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+
+.project-menu {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    /* MAX 8 / baris */
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.menu-tile {
+    background: #fff;
+    border: 1px solid #e6eaf0;
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+    text-decoration: none;
+    color: #495057;
+    transition: all .2s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .04);
+}
+
+.menu-tile i {
+    font-size: 16px;
+    margin-bottom: 4px;
+    color: #0d6efd;
+    display: block;
+}
+
+.menu-tile span {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.menu-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+    color: #0d6efd;
+}
+
+.menu-tile.active {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+}
+
+.menu-tile.active i {
+    color: #fff;
 }
