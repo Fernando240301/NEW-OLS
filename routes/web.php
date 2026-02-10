@@ -9,6 +9,8 @@ use App\Http\Controllers\KategoriPeralatanController;
 use App\Http\Controllers\JenisLayananController;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\OperationController;
+use App\Http\Controllers\ProspectController;
+use App\Http\Controllers\PenawaranController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
@@ -188,3 +190,56 @@ Route::get('/typeperalatan', [TypePeralatanController::class, 'index'])
 
 //tambah
 //edit
+
+//Add/Edit/Delete Prospect
+Route::middleware('auth')->group(function () {
+    Route::get('/prospect', [ProspectController::class, 'index'])->name('prospect.index');
+    Route::get('/prospect/create', [ProspectController::class, 'create'])->name('prospect.create');
+    Route::post('/prospect', [ProspectController::class, 'store'])->name('prospect.store');
+    Route::get('/prospect/{id}/edit', [ProspectController::class, 'edit'])->name('prospect.edit');
+    Route::put('/prospect/{id}', [ProspectController::class, 'update'])->name('prospect.update');
+    Route::delete('/prospect/{id}', [ProspectController::class, 'delete'])->name('prospect.delete');
+});
+//Add/Edit/Delete Penawaran
+Route::middleware('auth')->group(function () {
+
+    // INDEX
+    Route::get('/penawaran', [PenawaranController::class, 'index'])
+        ->name('penawaran.index');
+
+    // CREATE
+    Route::get('/penawaran/create', [PenawaranController::class, 'create'])
+        ->name('penawaran.create');
+
+    // STORE (INI YANG TADI HILANG ❗)
+    Route::post('/penawaran', [PenawaranController::class, 'store'])
+        ->name('penawaran.store');
+
+    // UPLOAD FILE (SETELAH ADA ID)
+    Route::get('/penawaran/{id}/upload', [PenawaranController::class, 'upload'])
+        ->name('penawaran.upload');
+
+    Route::post('/penawaran/{id}/upload', [PenawaranController::class, 'uploadStore'])
+        ->name('penawaran.upload.store');
+
+    // EDIT
+    Route::get('/penawaran/{id}/edit', [PenawaranController::class, 'edit'])
+        ->name('penawaran.edit');
+
+    // UPDATE
+    Route::put('/penawaran/{id}', [PenawaranController::class, 'update'])
+        ->name('penawaran.update');
+
+    // DELETE
+    Route::delete('/penawaran/{id}', [PenawaranController::class, 'delete'])
+        ->name('penawaran.delete');
+
+    // APPROVE 
+    Route::post('/penawaran/{id}/approve', [PenawaranController::class, 'approve'])
+    ->name('penawaran.approve');
+    Route::post('/penawaran/{id}/revisi', 
+    [App\Http\Controllers\PenawaranController::class, 'revisi']
+    )->name('penawaran.revisi');
+
+
+});
