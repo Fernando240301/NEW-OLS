@@ -158,4 +158,26 @@ class OperationController extends Controller
 
         return back()->with('success', 'File berhasil diupload');
     }
+
+    //SIK
+    public function sik($id)
+    {
+        $app_workflow = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->first();
+
+        if (!$app_workflow) {
+            abort(404);
+        }
+
+        // 🔑 decode workflowdata
+        $workflowdata = json_decode($app_workflow->workflowdata, true);
+
+        //Nama Client
+        $namaclient = DB::table('pemohon')
+            ->orderBy('pemohonid')
+            ->get();
+
+        return view('project_list.sik', compact('app_workflow', 'workflowdata', 'namaclient'));
+    }
 }

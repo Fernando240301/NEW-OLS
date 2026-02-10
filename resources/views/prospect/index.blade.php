@@ -1,17 +1,17 @@
 @extends('adminlte::page')
 
-@section('title', 'Type Peralatan')
+@section('title', 'Data Prospect')
 
 @section('plugins.Datatables', true)
 
 @section('content_header')
-    <h1>Type Peralatan</h1>
+    <h1>Data Prospect</h1>
 @endsection
 
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">📦 Data Type Peralatan</h3>
+        <h3 class="card-title">📦 Data Prospect</h3>
         <div class="card-tools">
             <a href="{{ route('prospect.create') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> Tambah Data
