@@ -168,6 +168,7 @@ Route::middleware('auth')->group(function () {
 
     //Surat Instruksi Kerja
     Route::get('/project-list/{id}/sik', [OperationController::class, 'sik'])->name('project_list.sik');    
+    Route::get('/project-list/{id}/createsik', [OperationController::class, 'createsik'])->name('sik.create');
 });
 
 

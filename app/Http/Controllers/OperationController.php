@@ -178,6 +178,89 @@ class OperationController extends Controller
             ->orderBy('pemohonid')
             ->get();
 
-        return view('project_list.sik', compact('app_workflow', 'workflowdata', 'namaclient'));
+        return view('sik.sik', compact('app_workflow', 'workflowdata', 'namaclient'));
+    }
+
+    public function createsik($id)
+    {
+        $workflow = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->first();
+
+        $workflowdata = json_decode($workflow->workflowdata, true);
+
+        // ambil nomor SIK terakhir
+        $lastSik = DB::table('app_workflow')
+            ->where('nworkflowid', $id)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->whereNotNull('workflowdata')
+            ->orderBy('createtime', 'desc')
+            ->value('workflowdata');
+
+        $nextNo = 1;
+
+        if ($lastSik) {
+            $json = json_decode($lastSik, true);
+
+            if (isset($json['no_sik'])) {
+                // ambil angka urutan (006)
+                preg_match('/\/No\/(\d+)\//', $json['no_sik'], $match);
+                if (isset($match[1])) {
+                    $nextNo = (int)$match[1] + 1;
+                }
+            }
+        }
+
+        $noUrut = str_pad($nextNo, 2, '0', STR_PAD_LEFT);
+        $tahun  = date('Y');
+
+        $noSik = "SIK/{$workflowdata['project_number']}/No/{$noUrut}/{$tahun}";
+
+        $namaInspector = DB::table('sys_users')
+            ->whereIn('rolesid', [20, 18])
+            ->orderBy('userid')
+            ->get();
+
+        $leaders = DB::table('app_workflow')
+            ->where('nworkflowid', $workflow->workflowid)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->whereNotNull('workflowdata')
+            ->get()
+            ->map(function ($row) {
+                $json = json_decode($row->workflowdata, true);
+
+                if (($json['pilihan_jabatan_project'] ?? null) === 'Leader') {
+                    return $json['user_inspector'] ?? null;
+                }
+                return null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        /*
+        $leaders = collection of userid leader
+        */
+
+        $leaderUsers = DB::table('sys_users')
+            ->whereIn('userid', $leaders)
+            ->orderBy('fullname')
+            ->get();
+
+        $scopes = DB::table('lov_jenis_peralatan as s')
+            ->leftJoin('ref_jenis_peralatan as j', 'j.id', '=', 's.jenis')
+            ->leftJoin('ref_tipe_peralatan as t', 't.id', '=', 's.tipe')
+            ->leftJoin('ref_kategori_peralatan as k', 'k.id', '=', 's.kategori')
+            ->select(
+                's.*',
+                'j.nama as jenis_nama',
+                't.nama as tipe_nama',
+                'k.nama as kategori_nama'
+            )
+            ->where('s.workflowid', $id)
+            ->get();
+
+
+        return view('sik.create', compact('workflowdata', 'noSik', 'workflow', 'namaInspector', 'leaderUsers', 'scopes'));
     }
 }

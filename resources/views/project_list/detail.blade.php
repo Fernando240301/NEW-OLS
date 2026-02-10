@@ -2,6 +2,11 @@
 
 @section('title', 'Project List')
 
+@section('css')
+    <link rel="stylesheet" href="{{ asset('css/adminlte-custom.css') }}">
+@endsection
+
+
 @section('plugins.Datatables', true)
 
 @section('plugins.Select2', true)

@@ -1,7 +1,7 @@
 @extends('adminlte::page')
 
 @section('css')
-    <link rel="stylesheet" href="{{ asset('resources/css/adminlte-custom.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/adminlte-custom.css') }}">
 @endsection
 
 @section('title', 'Surat Instruksi Kerja')
@@ -22,10 +22,22 @@
     <hr>
     <div class="card">
         <div class="card-header">
-            <a href="{{ route('client.create') }}" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> Tambah Dokumen
-            </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">
+                    <i class="fas fa-plus"></i> Tambah Dokumen
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{{ route('sik.create', $app_workflow->workflowid) }}">
+                        <i class="fas fa-certificate text-success"></i> New Certification
+                    </a>
+
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-history text-warning"></i> Extend
+                    </a>
+                </div>
+            </div>
         </div>
+
 
         <div class="card-body">
             @if (session('success'))
