@@ -171,7 +171,7 @@
             </div>
         </div>
 
-        <div class="card card-outline card-primary mb-4">
+        <div class="card card-outline card-primary mb-4 card-marketing">
             <div class="card-header py-2">
                 <strong>Syarat Administrasi</strong>
             </div>

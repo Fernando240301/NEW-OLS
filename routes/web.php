@@ -165,7 +165,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/project-list/scope/get', [OperationController::class, 'getScope'])->name('project_list.scope.get');
     Route::get('/kontrak/view/{filename}', [OperationController::class, 'viewKontrak'])->where('filename', '.*')->name('kontrak.view');
     Route::post('/project-list/file/upload', [OperationController::class, 'uploadMarketingFile'])->name('project_list.file.upload');
-    
+
+    //Surat Instruksi Kerja
+    Route::get('/project-list/{id}/sik', [OperationController::class, 'sik'])->name('project_list.sik');    
 });
 
 

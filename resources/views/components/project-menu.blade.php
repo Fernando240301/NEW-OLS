@@ -1,7 +1,4 @@
-@props([
-    'workflowid',
-    'active' => 'project', // default menu aktif
-])
+@props(['workflowid'])
 
 @php
     $menus = [
@@ -10,25 +7,28 @@
             'label' => 'Project',
             'icon' => 'fas fa-project-diagram',
             'route' => route('project_list.detail', $workflowid),
+            'route_name' => 'project_list.detail',
         ],
         [
             'key' => 'sik',
             'label' => 'S.I.K',
             'icon' => 'fas fa-file-alt',
-            'route' => '#',
+            'route' => route('project_list.sik', $workflowid),
+            'route_name' => 'project_list.sik',
         ],
         [
             'key' => 'itp',
             'label' => 'I.T.P',
             'icon' => 'fas fa-calendar-check',
             'route' => '#',
+            'route_name' => 'project_list.itp',
         ],
     ];
 @endphp
 
 <div class="project-menu">
     @foreach ($menus as $menu)
-        <a href="{{ $menu['route'] }}" class="menu-tile {{ $active === $menu['key'] ? 'active' : '' }}">
+        <a href="{{ $menu['route'] }}" class="menu-tile {{ request()->routeIs($menu['route_name']) ? 'active' : '' }}">
             <i class="{{ $menu['icon'] }}"></i>
             <span>{{ $menu['label'] }}</span>
         </a>
