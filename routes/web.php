@@ -167,8 +167,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/project-list/file/upload', [OperationController::class, 'uploadMarketingFile'])->name('project_list.file.upload');
 
     //Surat Instruksi Kerja
-    Route::get('/project-list/{id}/sik', [OperationController::class, 'sik'])->name('project_list.sik');    
+    Route::get('/project-list/{id}/sik', [OperationController::class, 'sik'])->name('project_list.sik');
     Route::get('/project-list/{id}/createsik', [OperationController::class, 'createsik'])->name('sik.create');
+    Route::post('/project-list/storesik', [OperationController::class, 'storesik'])->name('sik.store');
+    Route::get('/sik/get-leader-data/{workflowid}/{userid}', [OperationController::class, 'getLeaderData']);
+    Route::get('/sik/{id}/show', [OperationController::class, 'show'])->name('sik.show');
+    Route::get('/project/{projectId}/sik/{id}/edit', [OperationController::class, 'editsik'])->name('sik.edit');
+    Route::put('/project/{projectId}/sik/{id}', [OperationController::class, 'updatesik'])->name('sik.update');
+    Route::delete('/project/{projectId}/sik/{id}',[OperationController::class, 'deletesik'])->name('sik.delete');
 });
 
 
@@ -239,10 +245,9 @@ Route::middleware('auth')->group(function () {
 
     // APPROVE 
     Route::post('/penawaran/{id}/approve', [PenawaranController::class, 'approve'])
-    ->name('penawaran.approve');
-    Route::post('/penawaran/{id}/revisi', 
-    [App\Http\Controllers\PenawaranController::class, 'revisi']
+        ->name('penawaran.approve');
+    Route::post(
+        '/penawaran/{id}/revisi',
+        [App\Http\Controllers\PenawaranController::class, 'revisi']
     )->name('penawaran.revisi');
-
-
 });
