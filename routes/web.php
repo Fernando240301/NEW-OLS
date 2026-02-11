@@ -11,6 +11,7 @@ use App\Http\Controllers\MarketController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\ProspectController;
 use App\Http\Controllers\PenawaranController;
+use App\Http\Controllers\PPJBController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
@@ -241,5 +242,23 @@ Route::middleware('auth')->group(function () {
     [App\Http\Controllers\PenawaranController::class, 'revisi']
     )->name('penawaran.revisi');
 
+    //Add/Edit/Delete Prospect
+    Route::middleware('auth')->group(function () {
+    Route::get('/ppjb', [PPJBController::class, 'index'])->name('ppjb.index');
+    Route::get('/ppjb/create', [PPJBController::class, 'create'])->name('ppjb.create');
+    Route::post('/ppjb', [PPJBController::class, 'store'])->name('ppjb.store');
+    Route::get('/ppjb/{id}/edit', [PPJBController::class, 'edit'])->name('ppjb.edit');
+    Route::put('/ppjb/{id}', [PPJBController::class, 'update'])->name('ppjb.update');
+    Route::delete('/ppjb/{id}', [PPJBController::class, 'delete'])->name('ppjb.delete');
+    Route::get('/ppjb/{id}/preview', [PPJBController::class, 'preview'])
+    ->name('ppjb.preview');
+    Route::post('/ppjb/{id}/approve', [PPJBController::class, 'approve'])
+    ->name('ppjb.approve');
+    Route::post('/ppjb/{id}/reject', [PPJBController::class, 'reject'])
+    ->name('ppjb.reject');
+
+
+
+});
 
 });

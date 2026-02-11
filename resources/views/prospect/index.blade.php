@@ -1,17 +1,17 @@
 @extends('adminlte::page')
 
-@section('title', 'Type Peralatan')
+@section('title', 'Prospect')
 
 @section('plugins.Datatables', true)
 
 @section('content_header')
-    <h1>Type Peralatan</h1>
+    <h1>Prospect</h1>
 @endsection
 
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">📦 Data Type Peralatan</h3>
+        <h3 class="card-title">📦 Data Prospect</h3>
         <div class="card-tools">
             <a href="{{ route('prospect.create') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> Tambah Data
@@ -32,6 +32,7 @@
                         <th>Sales</th>
                         <th>Create User</th>
                         <th>Create Date</th>
+                        <th>FILE</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -46,8 +47,22 @@
                         <td>{{ $item->sales }}</td>
                         <td>{{ $item->SysUser->username ?? '-' }}</td>
                         <td>{{ $item->createdate }}</td>
+<td>
+    @if (!empty($item->file))
+        @foreach ($item->file as $file)
+            <a href="{{ asset('storage/'.$file) }}"
+               target="_blank"
+               class="d-block text-primary">
+                📎 {{ basename($file) }}
+            </a>
+        @endforeach
+    @else
+        <span class="text-muted">Tidak ada file</span>
+    @endif
+</td>
+    </div>
+</div>
                         <td class="text-center">
-                            <button class="btn btn-info btn-sm me-1 mb-1">Detail</button>
                             <a href="{{ route('prospect.edit', $item->id) }}"
                             class="btn btn-warning btn-sm me-1 mb-1"
                             onclick="event.stopPropagation();">

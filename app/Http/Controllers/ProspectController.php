@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\SysUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class ProspectController extends Controller
@@ -28,32 +29,61 @@ class ProspectController extends Controller
   public function store(Request $request)
 {
     $request->validate([
-        'judul' => 'required|string|max:255',
-        'klient' => 'required|string|max:255',
-        'id_peralatan' => 'required|exists:jenis_peralatan,id',
-        'catatan' => 'required|string',
-        'status' => 'required|string',
-        'sales' => 'required|string',
+        'judul'         => 'required|string|max:255',
+        'klient'        => 'required|string|max:255',
+        'id_peralatan'  => 'required|exists:ref_jenis_peralatan,id',
+        'catatan'       => 'nullable|string',
+        'status'        => 'required|string|max:50',
+        'tanggal'       => 'required|date',
+        'sales'         => 'required|string|max:100',
+        'files.*'       => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:2048',
     ]);
 
-    $userId = Auth::id();  // Ambil ID login
-    if (!$userId) {
-        return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu.');
+    DB::beginTransaction();
+
+    try {
+        $filesPath = [];
+
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                $filesPath[] = $file->store('prospect', 'public');
+            }
+        }
+
+        Prospect::create([
+            'judul'   => $request->judul,
+            'klient'  => $request->klient,
+            'alat'    => $request->id_peralatan,
+            'catatan' => $request->catatan,
+            'status'  => $request->status,
+            'tanggal' => $request->tanggal,
+            'sales'   => $request->sales,
+            'createdate' => now(),
+            'createuser' => Auth::id(),
+            'file'    => $filesPath ?: null,
+        ]);
+
+        DB::commit();
+
+        return redirect()->route('prospect.index')
+            ->with('success', 'Data prospect berhasil disimpan');
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        foreach ($filesPath as $file) {
+            Storage::disk('public')->delete($file);
+        }
+
+        // DEBUG sementara (kalau masih error)
+        // dd($e->getMessage());
+
+        return back()->withInput()
+            ->with('error', 'Gagal menyimpan data');
     }
-
-    Prospect::create([
-        'judul' => $request->judul,
-        'klient' => $request->klient,
-        'alat' => $request->id_peralatan,
-        'catatan' => $request->catatan,
-        'status' => $request->status,
-        'sales' => $request->sales,
-        'createuser' => $userId,  // otomatis dari login
-        'createdate' => now(),
-    ]);
-
-    return redirect()->route('prospect.index')->with('success', 'Data berhasil disimpan!');
 }
+
+
  public function edit($id)
 {
     $item = Prospect::findOrFail($id); // ⬅️ SATU DATA
@@ -62,36 +92,55 @@ class ProspectController extends Controller
 }
 public function update(Request $request, $id)
 {
-    // Validasi
     $request->validate([
-        'judul' => 'required|string|max:255',
-        'klient' => 'required|string|max:255',
-        'id_peralatan' => 'required|exists:jenis_peralatan,id',
-        'catatan' => 'required|string',
-        'status' => 'required|string',
-        'sales' => 'required|string',
+        'judul'        => 'required|string|max:255',
+        'klient'       => 'required|string|max:255',
+        'id_peralatan' => 'required|exists:ref_jenis_peralatan,id',
+        'catatan'      => 'required|string',
+        'status'       => 'required|string',
+        'tanggal'      => 'required|date',
+        'sales'        => 'required|string',
+
+        // 🔥 VALIDASI FILE YANG BENAR
+        'file'   => 'nullable|array',
+        'file.*' => 'file|mimes:pdf,jpg,jpeg,png,doc,docx|max:2048',
     ]);
-    // Cari data
+
     $item = Prospect::findOrFail($id);
 
-    $userId = Auth::id();  // Ambil ID login
-    if (!$userId) {
-        return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu.');
+    // ambil file lama
+    $filesPath = $item->file ?? [];
+
+    // kalau upload file baru
+    if ($request->hasFile('file')) {
+
+        // hapus file lama (opsional, tapi recommended)
+        foreach ($filesPath as $oldFile) {
+            Storage::disk('public')->delete($oldFile);
+        }
+
+        $filesPath = [];
+        foreach ($request->file('file') as $file) {
+            $filesPath[] = $file->store('prospect', 'public');
+        }
     }
-    // Update
+
     $item->update([
-    'judul' => $request->judul,
-        'klient' => $request->klient,
-        'alat' => $request->id_peralatan,
+        'judul'   => $request->judul,
+        'klient'  => $request->klient,
+        'alat'    => $request->id_peralatan,
         'catatan' => $request->catatan,
-        'status' => $request->status,
-        'sales' => $request->sales,
-        'createuser' => $userId,  // otomatis dari login
-        'createdate' => now(),
+        'status'  => $request->status,
+        'tanggal' => $request->tanggal,
+        'sales'   => $request->sales,
+        'file'    => $filesPath, // 🔥 INI PENTING
     ]);
 
-    return redirect()->route('prospect.index')->with('success', 'Data berhasil diperbaharui!');
+    return redirect()
+        ->route('prospect.index')
+        ->with('success', 'Data berhasil diperbaharui!');
 }
+
 public function delete($id)
     {
         $deleted = DB::table('prospect')

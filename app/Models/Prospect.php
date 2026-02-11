@@ -9,9 +9,25 @@ class Prospect extends Model
 {
     use HasFactory;
     protected $table = 'prospect';
-  protected $fillable = [
-    'judul', 'klient', 'alat', 'catatan', 'status', 'sales', 'createuser', 'createdate'
+    protected $fillable = [
+    'judul',
+    'klient',
+    'alat',
+    'catatan',
+    'status',
+    'tanggal',
+    'sales',
+    'file',
+    'createuser',
+    'createdate'
+    ];
+
+
+protected $casts = [
+    'file' => 'array',
+    'tanggal' => 'date',
 ];
+
 
      public $timestamps = false; // Matikan automatic created_at / updated_at
     
@@ -21,9 +37,11 @@ class Prospect extends Model
     }
 
     public function jenis()
-    {
-        return $this->belongsTo(JenisPeralatan::class, 'jenis_id');
-    }
+{
+    return $this->belongsTo(JenisPeralatan::class, 'alat', 'id');
+}
+
+
     public function market()
     {
         return $this->belongsTo(Market::class, 'pemohonid');

@@ -57,12 +57,12 @@ class RefTipePeralatanSeeder extends Seeder
             ['nama' => 'Installation/Instalasi Hulu', 'jenis' => 10, 'jns_ijin' => '051'],
             ['nama' => 'Installation/Instalasi Kilang', 'jenis' => 10, 'jns_ijin' => '052'],
 
-            ['nama' => 'NDT', 'jenis' => 12, 'jns_ijin' => null],
-            ['nama' => 'Dye Penetrant Inspection', 'jenis' => 12, 'jns_ijin' => null],
-            ['nama' => 'Magnetic Particle Inspection', 'jenis' => 12, 'jns_ijin' => null],
-            ['nama' => 'Positive Material Identification', 'jenis' => 12, 'jns_ijin' => null],
-            ['nama' => 'UT-thickness/welding', 'jenis' => 12, 'jns_ijin' => null],
-            ['nama' => 'Eddy Current', 'jenis' => 12, 'jns_ijin' => null],
+            ['nama' => 'NDT', 'jenis' => 12, 'jns_ijin' => ''],
+            ['nama' => 'Dye Penetrant Inspection', 'jenis' => 12, 'jns_ijin' => ''],
+            ['nama' => 'Magnetic Particle Inspection', 'jenis' => 12, 'jns_ijin' => ''],
+            ['nama' => 'Positive Material Identification', 'jenis' => 12, 'jns_ijin' => ''],
+            ['nama' => 'UT-thickness/welding', 'jenis' => 12, 'jns_ijin' => ''],
+            ['nama' => 'Eddy Current', 'jenis' => 12, 'jns_ijin' => ''],
 
             ['nama' => 'Instalasi RIG', 'jenis' => 13, 'jns_ijin' => '061'],
             ['nama' => 'Boiler', 'jenis' => 14, 'jns_ijin' => '062'],

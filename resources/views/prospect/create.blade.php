@@ -12,7 +12,7 @@
         <h3 class="card-title">Form Jenis Peralatan</h3>
     </div>
 
-    <form action="{{ route('prospect.store') }}" method="POST">
+    <form action="{{ route('prospect.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="card-body">
             <div class="form-group">
@@ -41,23 +41,22 @@
     <select name="id_peralatan" class="form-control @error('id_peralatan') is-invalid @enderror">
     <option value="">-- Pilih Peralatan --</option>
     @foreach($jenis as $peralatan)
-        <option value="{{ $peralatan->id }}" 
+        <option value="{{ $peralatan->id }}"
             {{ old('id_peralatan') == $peralatan->id ? 'selected' : '' }}>
-            {{ $peralatan->nama ?? $peralatan->id }}
+            {{ $peralatan->nama }}
         </option>
     @endforeach
 </select>
 
-                @error('id_peralatan')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+@error('id_peralatan')
+    <div class="invalid-feedback">{{ $message }}</div>
+@enderror
             </div>
             <div class="form-group">
                 <label>Catatan</label>
                 <input type="text" name="catatan"
                        class="form-control @error('catatan') is-invalid @enderror"
-                       value="{{ old('catatan') }}"
-                       placeholder="Contoh: PT.....">
+                       value="{{ old('catatan') }}">
                 @error('catatan')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -66,9 +65,17 @@
                 <label>Status</label>
                 <input type="text" name="status"
                        class="form-control @error('catatan') is-invalid @enderror"
-                       value="{{ old('catatan') }}"
-                       placeholder="Contoh: PT.....">
+                       value="{{ old('catatan') }}">
                 @error('catatan')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+            <div class="form-group">
+                <label>Tanggal</label>
+                <input type="date" name="tanggal"
+                       class="form-control @error('tanggal') is-invalid @enderror"
+                       value="{{ old('tanggal') }}">
+                @error('tanggal')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
@@ -82,12 +89,19 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
+            <div class="form-group">
+            <label>File Pendukung</label>
+            <input type="file"
+                name="files[]"
+                class="form-control @error('files.*') is-invalid @enderror"
+                multiple>
+
+            @error('files.*')
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
+            </div>
+
         </div>
-
-        
-        
-        
-
         <div class="card-footer">
             <a href="{{ route('typeperalatan') }}" class="btn btn-secondary">Kembali</a>
             <button type="submit" class="btn btn-primary float-right">Simpan</button>

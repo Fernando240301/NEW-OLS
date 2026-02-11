@@ -365,12 +365,21 @@ return [
             ],
         ],
         [
+<<<<<<< HEAD
             'text' => 'Operation',
             'icon' => 'fas fa-fw fa-cogs',
             'submenu' => [
                 [
                     'text' => 'Project List',
                     'url'  => '/project-list',
+=======
+            'text' => 'Finance',
+            'icon' => 'fas fa-receipt',
+            'submenu' => [
+                [
+                    'text' => 'PPJB',
+                    'route' => 'ppjb.index', // ⬅️ PAKAI NAME ROUTE
+>>>>>>> d9f2faf (revisi prospect)
                 ],
             ],
         ],
