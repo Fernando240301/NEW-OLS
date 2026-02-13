@@ -187,14 +187,50 @@ class OperationController extends Controller
             ->select('w.*', 'u.fullname as inspector_fullname')
             ->get();
 
-        // ✅ DECODE DULU SEMUA
+        // ✅ Decode workflowdata
         $data->each(function ($item) {
             if (is_string($item->workflowdata)) {
                 $item->workflowdata = json_decode($item->workflowdata, true);
             }
         });
 
-        // ✅ PROSES LEADER REFERENCE + AMBIL NAMA LEADER
+        /*
+    =========================================================
+    🔥 GROUP EXTEND KE PARENT
+    =========================================================
+    */
+
+        $parents = collect();
+        $extends = collect();
+
+        foreach ($data as $row) {
+            if (!empty($row->workflowdata['is_extend'])) {
+                $extends->push($row);
+            } else {
+                $row->extends = collect();
+                $parents->push($row);
+            }
+        }
+
+        // Gabungkan extend ke parent
+        foreach ($extends as $ext) {
+            $parentId = $ext->workflowdata['extend_from'] ?? null;
+
+            $parent = $parents->firstWhere('workflowid', $parentId);
+
+            if ($parent) {
+                $parent->extends->push($ext);
+            }
+        }
+
+        $data = $parents;
+
+        /*
+    =========================================================
+    PROSES LEADER REFERENCE
+    =========================================================
+    */
+
         $data->each(function ($item) use ($data) {
 
             $json = $item->workflowdata;
@@ -697,5 +733,150 @@ class OperationController extends Controller
 
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    public function extendsik($projectId, $id)
+    {
+        $sik = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->where('nworkflowid', $projectId)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->first();
+
+        if (!$sik) {
+            abort(404);
+        }
+
+        $workflowdata = json_decode($sik->workflowdata, true);
+
+        // 🔥 ambil nama inspector dari sys_users
+        $inspectorName = DB::table('sys_users')
+            ->where('userid', $workflowdata['user_inspector'] ?? null)
+            ->value('fullname');
+
+        return view('sik.extend', compact(
+            'sik',
+            'workflowdata',
+            'projectId',
+            'inspectorName'
+        ));
+    }
+
+    public function storeExtend(Request $request, $projectId, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            $oldSik = DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->where('nworkflowid', $projectId)
+                ->where('processname', 'surat_instruksi_kerja_01')
+                ->first();
+
+            if (!$oldSik) {
+                throw new \Exception('SIK tidak ditemukan');
+            }
+
+            $oldData = json_decode($oldSik->workflowdata, true);
+
+            // 🔥 clone data lama
+            $newData = $oldData;
+
+            // 🔥 update bagian tanggal saja (extend)
+            $newData['date_start'] = $request->date_start;
+            $newData['date_end']   = $request->date_end;
+            $newData['durasi']     = $request->durasi;
+
+            // tandai sebagai extend
+            $newData['is_extend'] = true;
+            $newData['extend_from'] = $id;
+
+            DB::table('app_workflow')->insert([
+
+                'codeid'          => rand(1000, 9999),
+                'projectname'     => $oldSik->projectname,
+                'tipe'            => 'doc',
+                'resi'            => now()->format('YmdHis'),
+                'client'          => $oldSik->client,
+                'processname'     => 'surat_instruksi_kerja_01',
+                'processcategory' => 'Extend Certification',
+                'createuser'      => Auth::user()->username ?? 'system',
+                'createtime'      => now(),
+                'workflowdata'    => json_encode($newData),
+                'nworkflowid'     => $projectId,
+                'last_update'     => now(),
+                'last_status'     => 'proses',
+                'next_taskname'   => 'permohonan',
+                'next_stepname'   => 'step0',
+                'next_rolename'   => 'pemohon',
+                'next_status'     => 'proses',
+
+                // 🔥 WAJIB TAMBAHKAN INI
+                'jns_ijin'        => 006,
+                'jns_layanan'     => 01,
+                'noreg'           => '',
+                'nib'             => '',
+
+            ]);
+
+
+            DB::commit();
+
+            return redirect()
+                ->route('project_list.sik', $projectId)
+                ->with('success', 'SIK berhasil di-extend');
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function previewSik($id)
+    {
+        $sik = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->first();
+
+        if (!$sik) {
+            abort(404);
+        }
+
+        $arr = json_decode($sik->workflowdata, true);
+
+        // Ambil project induk
+        $parent = DB::table('app_workflow')
+            ->where('workflowid', $sik->nworkflowid)
+            ->first();
+
+        $raw = json_decode($parent->workflowdata ?? '{}', true);
+
+        // Nama client
+        $namaclient = DB::table('pemohon')
+            ->where('pemohonid', $sik->client)
+            ->value('nama_perusahaan');
+
+        // Nama inspector
+        $nama = DB::table('sys_users')
+            ->where('userid', $arr['user_inspector'] ?? null)
+            ->value('fullname');
+
+        // NIP
+        $nip = DB::table('sys_users_detail')
+            ->where('nama', $nama)
+            ->value('nip');
+
+        $pdf = Pdf::loadView('sik.pdf', compact(
+            'arr',
+            'raw',
+            'namaclient',
+            'nama',
+            'nip'
+        ))->setPaper('A4', 'portrait');
+
+        return $pdf->stream('SIK.pdf');
     }
 }

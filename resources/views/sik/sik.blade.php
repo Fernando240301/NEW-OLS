@@ -30,10 +30,6 @@
                     <a class="dropdown-item" href="{{ route('sik.create', $app_workflow->workflowid) }}">
                         <i class="fas fa-certificate text-success"></i> New Certification
                     </a>
-
-                    <a class="dropdown-item" href="#">
-                        <i class="fas fa-history text-warning"></i> Extend
-                    </a>
                 </div>
             </div>
         </div>
@@ -57,9 +53,9 @@
                     <tr>
                         <th width="5%">No</th>
                         <th width="20%">No. SIK</th>
-                        <th width="20%">Inspector</th>
+                        <th width="25%">Inspector</th>
                         <th width="25%">Jabatan</th>
-                        <th width="15%">Action</th>
+                        <th width="25%">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -68,52 +64,119 @@
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $row->workflowdata['no_sik'] }}</td>
                             <td>{{ $row->inspector_fullname }}</td>
+
                             <td>
                                 {{ $row->workflowdata['pilihan_jabatan_project'] }}
 
-                                @if (in_array($row->workflowdata['pilihan_jabatan_project'], ['Anggota', 'Teknisi']) && !empty($row->leader_no_sik))
-                                    <br>
-                                    <small class="text-muted">
-                                        Leader :
-                                        <strong>{{ $row->leader_fullname }}</strong>
-                                        ({{ $row->leader_no_sik }})
+                                <div class="mt-1">
+                                    <small class="text-primary d-block">
+                                        New Certification
                                     </small>
-                                @endif
+
+                                    @if ($row->extends->count())
+                                        <small class="text-warning d-block">
+                                            ↳ Extend ({{ $row->extends->count() }})
+                                        </small>
+                                    @endif
+                                </div>
                             </td>
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center align-items-center gap-2">
 
-                                    {{-- PREVIEW --}}
-                                    <a href="{{ route('sik.show', $row->workflowid) }}"
-                                        class="btn btn-sm btn-outline-info rounded" title="Preview">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </a>
+                            <td>
 
-                                    {{-- EDIT --}}
-                                    <a href="{{ route('sik.edit', [
-                                        'projectId' => $app_workflow->workflowid,
-                                        'id' => $row->workflowid,
-                                    ]) }}"
-                                        class="btn btn-sm btn-outline-warning rounded" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                <div class="d-flex flex-column align-items-start">
 
+                                    {{-- ===================== --}}
+                                    {{-- BARIS 1 : PARENT --}}
+                                    {{-- ===================== --}}
+                                    <div class="d-flex gap-1 mb-1">
 
-                                    {{-- DELETE --}}
-                                    <form
-                                        action="{{ route('sik.delete', ['projectId' => $app_workflow->workflowid, 'id' => $row->workflowid]) }}"
-                                        method="POST" style="display:inline-block;"
-                                        onsubmit="return confirm('Yakin ingin menghapus SIK ini?')">
+                                        <a href="{{ route('sik.show', $row->workflowid) }}"
+                                            class="btn btn-sm btn-outline-info" target="_blank">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
 
-                                        @csrf
-                                        @method('DELETE')
-
-                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded" title="Delete">
-                                            <i class="fas fa-trash"></i>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary btn-copy-link"
+                                            data-link="{{ route('sik.show', $row->workflowid) }}" title="Copy Link">
+                                            <i class="fas fa-copy"></i>
                                         </button>
-                                    </form>
+
+
+                                        <a href="{{ route('sik.edit', [
+                                            'projectId' => $app_workflow->workflowid,
+                                            'id' => $row->workflowid,
+                                        ]) }}"
+                                            class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+
+                                        <form
+                                            action="{{ route('sik.delete', [
+                                                'projectId' => $app_workflow->workflowid,
+                                                'id' => $row->workflowid,
+                                            ]) }}"
+                                            method="POST" style="display:inline-block;"
+                                            onsubmit="return confirm('Yakin ingin menghapus SIK ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+
+                                        <a href="{{ route('sik.extend', [
+                                            'projectId' => $app_workflow->workflowid,
+                                            'id' => $row->workflowid,
+                                        ]) }}"
+                                            class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+
+                                    </div>
+
+                                    {{-- ===================== --}}
+                                    {{-- BARIS 2 : EXTEND --}}
+                                    {{-- ===================== --}}
+                                    @foreach ($row->extends as $ext)
+                                        <div class="d-flex gap-1">
+
+                                            <a href="{{ route('sik.show', $ext->workflowid) }}"
+                                                class="btn btn-sm btn-outline-info" target="_blank">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+
+                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-copy-link"
+                                                data-link="{{ route('sik.show', $ext->workflowid) }}" title="Copy Link">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+
+
+                                            <a href="{{ route('sik.edit', [
+                                                'projectId' => $app_workflow->workflowid,
+                                                'id' => $ext->workflowid,
+                                            ]) }}"
+                                                class="btn btn-sm btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+
+                                            <form
+                                                action="{{ route('sik.delete', [
+                                                    'projectId' => $app_workflow->workflowid,
+                                                    'id' => $ext->workflowid,
+                                                ]) }}"
+                                                method="POST" style="display:inline-block;"
+                                                onsubmit="return confirm('Yakin ingin menghapus Extend ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+
+                                        </div>
+                                    @endforeach
 
                                 </div>
+
                             </td>
                         </tr>
                     @endforeach
@@ -138,6 +201,25 @@
                     }
                 }
             });
+        });
+    </script>
+
+    <script>
+        $(document).on('click', '.btn-copy-link', function() {
+
+            let link = $(this).data('link');
+
+            let tempInput = document.createElement("input");
+            tempInput.value = link;
+            document.body.appendChild(tempInput);
+
+            tempInput.select();
+            tempInput.setSelectionRange(0, 99999); // mobile support
+
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+
+            alert('Link berhasil disalin!');
         });
     </script>
 @endpush

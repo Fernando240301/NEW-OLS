@@ -171,10 +171,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/project-list/{id}/createsik', [OperationController::class, 'createsik'])->name('sik.create');
     Route::post('/project-list/storesik', [OperationController::class, 'storesik'])->name('sik.store');
     Route::get('/sik/get-leader-data/{workflowid}/{userid}', [OperationController::class, 'getLeaderData']);
-    Route::get('/sik/{id}/show', [OperationController::class, 'show'])->name('sik.show');
+    Route::get('/sik/preview/{id}', [OperationController::class, 'previewSik'])->name('sik.show');
+
+
     Route::get('/project/{projectId}/sik/{id}/edit', [OperationController::class, 'editsik'])->name('sik.edit');
     Route::put('/project/{projectId}/sik/{id}', [OperationController::class, 'updatesik'])->name('sik.update');
-    Route::delete('/project/{projectId}/sik/{id}',[OperationController::class, 'deletesik'])->name('sik.delete');
+    Route::delete('/project/{projectId}/sik/{id}', [OperationController::class, 'deletesik'])->name('sik.delete');
+
+    Route::get('/project-list/{projectId}/sik/{id}/extend', [OperationController::class, 'extendsik'])->name('sik.extend');
+    Route::post('/project-list/{projectId}/sik/{id}/extend', [OperationController::class, 'storeExtend'])->name('sik.storeExtend');
 });
 
 

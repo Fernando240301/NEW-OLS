@@ -470,9 +470,9 @@
                     <button class="btn btn-primary">
                         <i class="fas fa-save"></i> Simpan
                     </button>
-                    <a href="{{ route('project_list.sik', $parentWorkflow->workflowid) }}" class="btn btn-secondary">
+                    {{-- <a href="{{ route('project_list.sik', $parentWorkflow->workflowid) }}" class="btn btn-secondary">
                         Batal
-                    </a>
+                    </a> --}}
                 </div>
             </form>
         </div>
