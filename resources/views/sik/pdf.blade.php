@@ -80,6 +80,62 @@
         .signature img {
             width: 120px;
         }
+
+        .ttd-box {
+            text-align: center;
+            vertical-align: top;
+            height: 120px;
+            padding-top: 8px;
+        }
+
+        .ttd-title {
+            font-size: 10pt;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .ttd-img {
+            height: 70px;
+            margin: 8px 0;
+        }
+
+        .ttd-name {
+            font-size: 10pt;
+            font-weight: bold;
+        }
+
+        .ttd-jabatan {
+            font-size: 9pt;
+        }
+
+        .tbl-peralatan {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+        }
+
+        .tbl-peralatan td,
+        .tbl-peralatan th {
+            border: 1px solid #000;
+            padding: 0px;
+        }
+
+        .tbl-header {
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .tbl-title {
+            font-style: italic;
+            font-weight: bold;
+            text-align: left;
+            background-color: #f2f2f2;
+        }
+
+        .tbl-center {
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -108,16 +164,16 @@
     {{-- ================= NOMOR & TANGGAL ================= --}}
     <table>
         <tr>
-            <td width="60%" style="border-right:none; border-bottom: none;"></td>
-            <td width="15%" style="border-left:none;border-right:none; border-bottom: none;">Nomor</td>
-            <td width="2%" style="border-left:none;border-right:none; border-bottom: none;">:</td>
-            <td style="border-left:none; border-bottom: none;">{{ $arr['no_sik'] ?? '-' }}</td>
+            <td width="60%" style="padding: 2px; border-right:none; border-bottom: none;"></td>
+            <td width="15%" style="padding: 2px; border-left:none;border-right:none; border-bottom: none;">Nomor</td>
+            <td width="2%" style="padding: 2px; border-left:none;border-right:none; border-bottom: none;">:</td>
+            <td style="padding: 2px; border-left:none; border-bottom: none;">{{ $arr['no_sik'] ?? '-' }}</td>
         </tr>
         <tr>
-            <td style="border-right:none;border-top:none;"></td>
-            <td style="border-left:none;border-right:none;border-top:none;">Tanggal</td>
-            <td style="border-left:none;border-right:none;border-top:none;">:</td>
-            <td style="border-left:none;border-top:none;">
+            <td style="padding: 2px; border-right:none;border-top:none;"></td>
+            <td style="padding: 2px; border-left:none;border-right:none;border-top:none;">Tanggal</td>
+            <td style="padding: 2px; border-left:none;border-right:none;border-top:none;">:</td>
+            <td style="padding: 2px; border-left:none;border-top:none;">
                 {{ \Carbon\Carbon::parse($arr['tanggal_sik'])->translatedFormat('d F Y') ?? '-' }}
             </td>
         </tr>
@@ -126,36 +182,46 @@
     {{-- ================= CLIENT ================= --}}
     <table>
         <tr>
-            <td width="20%" style="border-right: none;">Client / End User</td>
-            <td width="2%" style="border-left: none; border-right: none;">:</td>
-            <td width="38%" style="border-left: none;">{{ $namaclient }}</td>
-            <td width="40%" style="border-left: none; vertical-align: middle; font-size: 14pt;" rowspan="2"
+            <td width="20%" style="padding: 2px; border-bottom: none; border-right: none;">&nbsp;Client / End User</td>
+            <td width="2%" style="padding: 2px; border-bottom: none; border-left: none; border-right: none;">:</td>
+            <td width="53%" style="padding: 2px; border-bottom: none; border-left: none;">{{ $namaclient }}</td>
+            <td width="25%" style="padding: 2px; border-bottom: none; border-left: none; vertical-align: middle; font-size: 14pt;" rowspan="2"
                 align="center"><b>{{ $raw['project_number'] ?? '-' }}</b></td>
         </tr>
         <tr>
-            <td style="border-right: none;">Contact Person</td>
-            <td style="border-left: none; border-right: none;">:</td>
-            <td style="border-left: none;">{{ $arr['contact_person'] ?? '-' }}</td>
+            <td style="padding: 2px; border-top: none; border-right: none;">&nbsp;Contact Person</td>
+            <td style="padding: 2px; border-top: none; border-left: none; border-right: none;">:</td>
+            <td style="padding: 2px; border-top: none; border-left: none;">{{ $arr['contact_person'] ?? '-' }}</td>
         </tr>
     </table>
 
     {{-- ================= PERALATAN ================= --}}
-    <table>
+    <table style="font-size: 9pt;">
         <tr>
-            <td width="25%" align="center"><b>Objek Inspeksi</b></td>
-            <td width="25%" align="center"><b>Tipe Objek Inspeksi</b></td>
-            <td width="25%" align="center"><b>Kategori Inspeksi</b></td>
-            <td width="25%" align="center"><b>Jumlah</b></td>
+            <td width="25%" align="center" style="padding: 4px;"><b>Objek Inspeksi</b></td>
+            <td width="25%" align="center" style="padding: 4px;"><b>Tipe Objek Inspeksi</b></td>
+            <td width="25%" align="center" style="padding: 4px;"><b>Kategori Inspeksi</b></td>
+            <td width="25%" align="center" style="padding: 4px;"><b>Jumlah</b></td>
         </tr>
 
         @foreach ($arr['peralatan'] ?? [] as $i => $alat)
             <tr>
-                <td align="center"></td>
-                <td align="center">
-                    {{ DB::table('ref_tipe_peralatan')->where('id', $alat['type_peralatan'])->value('nama') }}
+                @php
+                    $typeId = (int) $alat['type_peralatan'];
+                @endphp
+
+                <td align="center" style="vertical-align: middle; padding: 4px;">
+                    {{ $jenisMap[$typeId]->nama_jenis ?? '-' }}
                 </td>
-                <td align="center"></td>
-                <td align="center">{{ $alat['jumlah'] ?? '-' }}</td>
+
+                <td align="center" style="vertical-align: middle; padding: 4px;">
+                    {{ $jenisMap[$typeId]->nama_tipe ?? '-' }}
+                </td>
+
+                <td align="center" style="vertical-align: middle; padding: 4px;">
+                    {{ $jenisMap[$typeId]->nama_kategori ?? '-' }}
+                </td>
+                <td align="center" style="vertical-align: middle; padding: 4px;">{{ $alat['jumlah'] ?? '-' }}</td>
             </tr>
         @endforeach
 
@@ -164,59 +230,68 @@
     {{-- ================= INSPECTOR ================= --}}
     <table>
         <tr>
-            <td colspan="9" style="font-size: 9pt; font-weight: bold;"><i>Bersama ini menugaskan saudara :</i></td>
+            <td colspan="9" style="font-size: 9pt; font-weight: bold; padding: 2px;"><i>Bersama ini menugaskan saudara :</i></td>
         </tr>
         <tr>
             {{-- NAMA --}}
-            <td width="8%" style="border-right:none; font-size: 8pt;">Nama</td>
-            <td width="2%" style="border-left:none;border-right:none; font-size: 8pt;">:</td>
-            <td width="23%" style="border-left:none; border-right:none; font-size: 8pt;">{{ $nama }}</td>
+            <td width="8%" style="padding: 2px; border-bottom: none; border-right:none; font-size: 8pt;">&nbsp;Nama</td>
+            <td width="2%" style="padding: 2px; border-bottom: none; border-left:none;border-right:none; font-size: 8pt;">:</td>
+            <td width="23%" style="padding: 2px; border-bottom: none; border-left:none; border-right:none; font-size: 8pt;">
+                {{ $nama }}</td>
 
             {{-- LOKASI --}}
-            <td width="12%" style="border-right:none; border-left: none; font-size: 8pt;">Lokasi Kerja</td>
-            <td width="2%" style="border-left:none;border-right:none; font-size: 8pt;">:</td>
-            <td width="23%" style="border-left:none; border-right:none; font-size: 8pt;">
+            <td width="12%" style="padding: 2px; border-bottom: none; border-right:none; border-left: none; font-size: 8pt;">&nbsp;Lokasi
+                Kerja</td>
+            <td width="2%" style="padding: 2px; border-bottom: none; border-left:none;border-right:none; font-size: 8pt;">:</td>
+            <td width="23%" style="padding: 2px; border-bottom: none; border-left:none; border-right:none; font-size: 8pt;">
                 {{ $arr['location_job'] ?? '-' }}
             </td>
 
             {{-- TGL MULAI --}}
-            <td width="10%" style="border-right:none; border-left: none; font-size: 8pt;">Tgl. Mulai</td>
-            <td width="2%" style="border-left:none;border-right:none; font-size: 8pt;">:</td>
-            <td width="18%" style="border-left:none; font-size: 8pt;">
+            <td width="10%" style="padding: 2px; border-bottom: none; border-right:none; border-left: none; font-size: 8pt;">&nbsp;Tgl.
+                Mulai</td>
+            <td width="2%" style="padding: 2px; border-bottom: none; border-left:none;border-right:none; font-size: 8pt;">:</td>
+            <td width="18%" style="padding: 2px; border-bottom: none; border-left:none; font-size: 8pt;">
                 {{ \Carbon\Carbon::parse($arr['date_start'])->translatedFormat('F d, Y') }}
             </td>
         </tr>
 
         <tr>
-            <td style="border-right:none; font-size: 8pt;">Jabatan</td>
-            <td style="border-left:none;border-right:none; font-size: 8pt;">:</td>
-            <td style="border-left:none; border-right:none; font-size: 8pt;">{{ $arr['pilihan_jabatan_project'] }}</td>
+            <td style="padding: 2px; border-bottom: none; border-top: none; border-right:none; font-size: 8pt;">&nbsp;Jabatan</td>
+            <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none;border-right:none; font-size: 8pt;">:
+            </td>
+            <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none; border-right:none; font-size: 8pt;">
+                {{ $arr['pilihan_jabatan_project'] }}</td>
 
-            <td style="border-right:none; border-left: none; font-size: 8pt;">Area</td>
-            <td style="border-left:none;border-right:none; font-size: 8pt;">:</td>
-            <td style="border-left:none; border-right:none; font-size: 8pt;">
+            <td style="padding: 2px; border-bottom: none; border-top: none; border-right:none; border-left: none; font-size: 8pt;">
+                &nbsp;Area</td>
+            <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none;border-right:none; font-size: 8pt;">:
+            </td>
+            <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none; border-right:none; font-size: 8pt;">
                 {{ $arr['area'] ?? '-' }}
             </td>
 
-            <td style="border-right:none; border-left: none; font-size: 8pt;">Tgl. Akhir</td>
-            <td style="border-left:none;border-right:none; font-size: 8pt;">:</td>
-            <td style="border-left:none; font-size: 8pt;">
+            <td style="padding: 2px; border-bottom: none; border-top: none; border-right:none; border-left: none; font-size: 8pt;">
+                &nbsp;Tgl. Akhir</td>
+            <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none;border-right:none; font-size: 8pt;">:
+            </td>
+            <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none; font-size: 8pt;">
                 {{ \Carbon\Carbon::parse($arr['date_end'])->translatedFormat('F d, Y') }}
             </td>
         </tr>
 
         <tr>
-            <td style="border-right:none; font-size: 8pt;">NIP</td>
-            <td style="border-left:none;border-right:none; font-size: 8pt;">:</td>
-            <td style="border-left:none; border-right:none; font-size: 8pt;">{{ $nip }}</td>
+            <td style="padding: 2px; border-top: none; border-right:none; font-size: 8pt;">&nbsp;NIP</td>
+            <td style="padding: 2px; border-top: none; border-left:none;border-right:none; font-size: 8pt;">:</td>
+            <td style="padding: 2px; border-top: none; border-left:none; border-right:none; font-size: 8pt;">{{ $nip }}</td>
 
-            <td style="border-right:none; border-left: none; font-size: 8pt;"></td>
-            <td style="border-left:none;border-right:none; font-size: 8pt;"></td>
-            <td style="border-left:none; border-right:none; font-size: 8pt;"></td>
+            <td style="padding: 2px; border-top: none; border-right:none; border-left: none; font-size: 8pt;"></td>
+            <td style="padding: 2px; border-top: none; border-left:none;border-right:none; font-size: 8pt;"></td>
+            <td style="padding: 2px; border-top: none; border-left:none; border-right:none; font-size: 8pt;"></td>
 
-            <td style="border-right:none; border-left: none; font-size: 8pt;">Durasi</td>
-            <td style="border-left:none;border-right:none; font-size: 8pt;">:</td>
-            <td style="border-left:none; font-size: 8pt;">
+            <td style="padding: 2px; border-top: none; border-right:none; border-left: none; font-size: 8pt;">&nbsp;Durasi</td>
+            <td style="padding: 2px; border-top: none; border-left:none;border-right:none; font-size: 8pt;">:</td>
+            <td style="padding: 2px; border-top: none; border-left:none; font-size: 8pt;">
                 {{ $arr['durasi'] }}
             </td>
         </tr>
@@ -238,16 +313,16 @@
 
     <table style="font-size:8pt;">
         <tr>
-            <td colspan="8" style="font-weight:bold;">
+            <td colspan="8" style="font-weight:bold; padding: 2px;">
                 <i>Untuk melaksanakan tugas sebagai berikut :</i>
             </td>
         </tr>
 
         <tr>
-            <td colspan="2" align="center"><b>Persiapan Inspeksi</b></td>
-            <td colspan="2" align="center"><b>Pemeriksaan Lapangan</b></td>
-            <td colspan="2" align="center"><b>Pelaporan Inspeksi</b></td>
-            <td colspan="2" align="center"><b>Pengurusan Migas</b></td>
+            <td colspan="2" align="center" style="padding: 3px;"><b>Persiapan Inspeksi</b></td>
+            <td colspan="2" align="center" style="padding: 3px;"><b>Pemeriksaan Lapangan</b></td>
+            <td colspan="2" align="center" style="padding: 3px;"><b>Pelaporan Inspeksi</b></td>
+            <td colspan="2" align="center" style="padding: 3px;"><b>Pengurusan Migas</b></td>
         </tr>
 
         <tr>
@@ -361,7 +436,80 @@
             <td></td>
             <td></td>
         </tr>
+
+        <tr>
+            <td style="font-weight: bold; text-align: center; border-right: none;"><i>Catatan :</i></td>
+            <td colspan="7" style="border-left: none;">{{ $arr['catatan_sik'] }}</td>
+        </tr>
     </table>
+
+    {{-- ================= TANDA TANGAN ================= --}}
+    <table>
+        <tr>
+            <td width="25%" class="ttd-box">
+                <div class="ttd-title">Pemberi Tugas</div>
+                <img src="{{ public_path('uploadfile/ttd/ttd pak rony.png') }}" class="ttd-img">
+                <div class="ttd-jabatan">Manager Operasional</div>
+            </td>
+
+            <td width="25%" class="ttd-box">
+                <div class="ttd-title">Menyetujui</div>
+                <img src="{{ public_path('uploadfile/ttd/TTD_KAK_MERY.png') }}" class="ttd-img">
+                <div class="ttd-jabatan">QHSE Officer</div>
+            </td>
+
+            <td width="25%" class="ttd-box">
+                <div class="ttd-title">Mengetahui</div>
+                <img src="{{ public_path('uploadfile/ttd/kosong.png') }}" class="ttd-img">
+                <div class="ttd-jabatan">Manager Keuangan</div>
+            </td>
+
+            <td width="25%" class="ttd-box">
+                <div class="ttd-title">Mengetahui</div>
+                <img src="{{ public_path('uploadfile/ttd/ttd_dea.png') }}" class="ttd-img">
+                <div class="ttd-jabatan">Manager Marketing</div>
+            </td>
+        </tr>
+    </table>
+
+    {{-- ================= PERALATAN INSPEKSI ================= --}}
+    <table class="tbl-peralatan" style="margin-top:5px;">
+        <tr>
+            <td colspan="7" class="tbl-title">
+                &nbsp;&nbsp;&nbsp;Peralatan Inspeksi yang akan digunakan :
+            </td>
+        </tr>
+
+        <tr class="tbl-header">
+            <td width="5%">No</td>
+            <td width="20%">Nama Peralatan</td>
+            <td width="15%">Tag Number</td>
+            <td width="10%">Type</td>
+            <td width="15%">Serial Number</td>
+            <td width="20%">Lama Pemakaian</td>
+            <td width="15%">Kondisi Alat</td>
+        </tr>
+
+        {{-- Contoh 1 baris kosong --}}
+        <tr>
+            <td class="tbl-center">&nbsp;</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        {{-- Catatan --}}
+        <tr>
+            <td colspan="7" style="font-style: italic;">
+                Catatan :
+            </td>
+        </tr>
+    </table>
+
+
 </body>
 
 </html>

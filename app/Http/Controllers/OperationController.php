@@ -869,12 +869,47 @@ class OperationController extends Controller
             ->where('nama', $nama)
             ->value('nip');
 
+
+        /* =====================================================
+     * AMBIL NAMA JENIS PERALATAN (JOIN)
+     * ===================================================== */
+
+        $jenisMap = [];
+
+        if (!empty($arr['peralatan'])) {
+
+            $typeIds = collect($arr['peralatan'])
+                ->pluck('type_peralatan')
+                ->filter()
+                ->map(function ($item) {
+                    return (int) $item; // ⬅️ paksa jadi integer
+                })
+                ->unique()
+                ->values();
+
+            $jenisData = DB::table('lov_jenis_peralatan')
+                ->leftJoin('ref_jenis_peralatan', 'lov_jenis_peralatan.jenis', '=', 'ref_jenis_peralatan.id')
+                ->leftJoin('ref_tipe_peralatan', 'lov_jenis_peralatan.tipe', '=', 'ref_tipe_peralatan.id')
+                ->leftJoin('ref_kategori_peralatan', 'lov_jenis_peralatan.kategori', '=', 'ref_kategori_peralatan.id')
+                ->whereIn('lov_jenis_peralatan.id', $typeIds)
+                ->select(
+                    'lov_jenis_peralatan.id',
+                    'ref_jenis_peralatan.nama as nama_jenis',
+                    'ref_tipe_peralatan.nama as nama_tipe',
+                    'ref_kategori_peralatan.nama as nama_kategori'
+                )
+                ->get();
+
+            $jenisMap = $jenisData->keyBy('id');
+        }
+
         $pdf = Pdf::loadView('sik.pdf', compact(
             'arr',
             'raw',
             'namaclient',
             'nama',
-            'nip'
+            'nip',
+            'jenisMap' // ⬅️ kirim ke blade
         ))->setPaper('A4', 'portrait');
 
         return $pdf->stream('SIK.pdf');
