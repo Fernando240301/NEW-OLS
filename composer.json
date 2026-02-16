@@ -10,7 +10,10 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "jeroennoten/laravel-adminlte": "^3.15",
         "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "phpoffice/phpword": "^1.4",
+        "setasign/fpdi-tcpdf": "^2.3",
+        "simplesoftwareio/simple-qrcode": "^4.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

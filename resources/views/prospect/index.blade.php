@@ -1,11 +1,11 @@
 @extends('adminlte::page')
 
-@section('title', 'Prospect')
+@section('title', 'Data Prospect')
 
 @section('plugins.Datatables', true)
 
 @section('content_header')
-    <h1>Prospect</h1>
+    <h1>Data Prospect</h1>
 @endsection
 
 @section('content')

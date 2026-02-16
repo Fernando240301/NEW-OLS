@@ -24,7 +24,10 @@ class OperationController extends Controller
 {
     public function index()
     {
-        $data = Project::orderBy('workflowid', 'desc')->get();
+        $data = Project::where('tipe', 'pr')
+            ->orderBy('workflowid', 'desc')
+            ->get();
+
 
         return view('project_list.index', compact('data'));
     }
@@ -157,5 +160,758 @@ class OperationController extends Controller
             ]);
 
         return back()->with('success', 'File berhasil diupload');
+    }
+
+    //SIK
+    public function sik($id)
+    {
+        $app_workflow = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->first();
+
+        if (!$app_workflow) {
+            abort(404);
+        }
+
+        // Ambil semua SIK anak
+        $data = DB::table('app_workflow as w')
+            ->leftJoin(
+                'sys_users as u',
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata, '$.user_inspector'))"),
+                '=',
+                'u.userid'
+            )
+            ->where('w.nworkflowid', $id)
+            ->where('w.processname', 'surat_instruksi_kerja_01')
+            ->orderBy('w.workflowid', 'asc')
+            ->select('w.*', 'u.fullname as inspector_fullname')
+            ->get();
+
+        // ✅ Decode workflowdata
+        $data->each(function ($item) {
+            if (is_string($item->workflowdata)) {
+                $item->workflowdata = json_decode($item->workflowdata, true);
+            }
+        });
+
+        /*
+    =========================================================
+    🔥 GROUP EXTEND KE PARENT
+    =========================================================
+    */
+
+        $parents = collect();
+        $extends = collect();
+
+        foreach ($data as $row) {
+            if (!empty($row->workflowdata['is_extend'])) {
+                $extends->push($row);
+            } else {
+                $row->extends = collect();
+                $parents->push($row);
+            }
+        }
+
+        // Gabungkan extend ke parent
+        foreach ($extends as $ext) {
+            $parentId = $ext->workflowdata['extend_from'] ?? null;
+
+            $parent = $parents->firstWhere('workflowid', $parentId);
+
+            if ($parent) {
+                $parent->extends->push($ext);
+            }
+        }
+
+        $data = $parents;
+
+        /*
+    =========================================================
+    PROSES LEADER REFERENCE
+    =========================================================
+    */
+
+        $data->each(function ($item) use ($data) {
+
+            $json = $item->workflowdata;
+
+            if (in_array($json['pilihan_jabatan_project'] ?? '', ['Anggota', 'Teknisi'])) {
+
+                $leaderId = $json['leadnya_pilihan_jabatan_project'] ?? null;
+
+                if ($leaderId) {
+
+                    $leader = $data->first(function ($row) use ($leaderId) {
+                        return ($row->workflowdata['user_inspector'] ?? null) == $leaderId
+                            && ($row->workflowdata['pilihan_jabatan_project'] ?? null) == 'Leader';
+                    });
+
+                    if ($leader) {
+                        $item->leader_no_sik     = $leader->workflowdata['no_sik'] ?? null;
+                        $item->leader_fullname  = $leader->inspector_fullname ?? null;
+                    }
+                }
+            }
+        });
+
+        $workflowdata = json_decode($app_workflow->workflowdata, true);
+
+        $namaclient = DB::table('pemohon')
+            ->orderBy('pemohonid')
+            ->get();
+
+        return view('sik.sik', compact(
+            'app_workflow',
+            'workflowdata',
+            'namaclient',
+            'data'
+        ));
+    }
+
+    public function createsik($id)
+    {
+        $workflow = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->first();
+
+        $workflowdata = json_decode($workflow->workflowdata, true);
+
+        // ambil nomor SIK terakhir
+        $lastSik = DB::table('app_workflow')
+            ->where('nworkflowid', $id)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->whereNotNull('workflowdata')
+            ->orderBy('createtime', 'desc')
+            ->value('workflowdata');
+
+        $nextNo = 1;
+
+        if ($lastSik) {
+            $json = json_decode($lastSik, true);
+
+            if (isset($json['no_sik'])) {
+                // ambil angka urutan (006)
+                preg_match('/\/(\d+)\/\d{4}$/', $json['no_sik'], $match);
+                if (isset($match[1])) {
+                    $nextNo = (int)$match[1] + 1;
+                }
+            }
+        }
+
+        $noUrut = str_pad($nextNo, 2, '0', STR_PAD_LEFT);
+        $tahun  = date('Y');
+
+        $noSik = "SIK/{$workflowdata['project_number']}/{$noUrut}/{$tahun}";
+
+        $namaInspector = DB::table('sys_users')
+            ->whereIn('rolesid', [20, 18])
+            ->orderBy('userid')
+            ->get();
+
+        $leaders = DB::table('app_workflow')
+            ->where('nworkflowid', $workflow->workflowid)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->whereNotNull('workflowdata')
+            ->get()
+            ->map(function ($row) {
+                $json = json_decode($row->workflowdata, true);
+
+                if (($json['pilihan_jabatan_project'] ?? null) === 'Leader') {
+                    return $json['user_inspector'] ?? null;
+                }
+                return null;
+            })
+            ->filter()
+            ->unique()
+            ->values();
+
+        /*
+        $leaders = collection of userid leader
+        */
+
+        $leaderUsers = DB::table('sys_users')
+            ->whereIn('userid', $leaders)
+            ->orderBy('fullname')
+            ->get();
+
+        $scopes = DB::table('lov_jenis_peralatan as s')
+            ->leftJoin('ref_jenis_peralatan as j', 'j.id', '=', 's.jenis')
+            ->leftJoin('ref_tipe_peralatan as t', 't.id', '=', 's.tipe')
+            ->leftJoin('ref_kategori_peralatan as k', 'k.id', '=', 's.kategori')
+            ->select(
+                's.*',
+                'j.nama as jenis_nama',
+                't.nama as tipe_nama',
+                'k.nama as kategori_nama'
+            )
+            ->where('s.workflowid', $id)
+            ->get();
+
+
+        return view('sik.create', compact('workflowdata', 'noSik', 'workflow', 'namaInspector', 'leaderUsers', 'scopes'));
+    }
+
+    public function storesik(Request $request)
+    {
+        $request->validate([
+            'no_sik'           => 'required',
+            'tanggal_sik'      => 'nullable|date',
+            'user_inspector'   => 'required',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+
+            /* =========================
+         * 1. UPLOAD MULTI FILE
+         * ========================= */
+            $uploadedFiles = [];
+
+            if ($request->hasFile('surat_tugas')) {
+                foreach ($request->file('surat_tugas') as $file) {
+
+                    $original = str_replace(' ', '_', $file->getClientOriginalName());
+                    $filename = now()->format('Ymd_His') . '_' . uniqid() . '_' . $original;
+
+                    $path = $file->storeAs(
+                        'surat_tugas',
+                        $filename,
+                        'public'
+                    );
+
+                    $uploadedFiles[] = $path;
+                }
+            }
+
+            $parentWorkflow = DB::table('app_workflow')
+                ->where('workflowid', $request->nworkflowid)
+                ->first();
+
+            if (!$parentWorkflow) {
+                throw new \Exception('Workflow induk tidak ditemukan');
+            }
+
+            /* =========================
+         * 2. SIAPKAN WORKFLOWDATA
+         * ========================= */
+            $workflowdata = [
+
+                // DATA SIK
+                'no_sik'          => $request->no_sik,
+                'tanggal_sik'     => $request->tanggal_sik,
+                'contact_person'  => $request->contact_person,
+
+                // INSPECTOR
+                'user_inspector'                    => $request->user_inspector,
+                'pilihan_jabatan_project'           => $request->pilihan_jabatan_project,
+                'leadnya_pilihan_jabatan_project'   => $request->leadnya_pilihan_jabatan_project,
+
+                // PERALATAN (ARRAY)
+                'peralatan'       => $request->peralatan,
+
+                // LOKASI & TANGGAL
+                'location_job'    => $request->location_job,
+                'area_sik'        => $request->area_sik,
+                'date_start'      => $request->date_start,
+                'date_end'        => $request->date_end,
+                'durasi'          => $request->durasi,
+
+                // PERSIAPAN
+                'persiapan' => [
+                    'peri1' => $request->peri1,
+                    'peri2' => $request->peri2,
+                    'peri3' => $request->peri3,
+                    'peri4' => $request->peri4,
+                ],
+
+                // PEMERIKSAAN LAPANGAN
+                'lapangan' => [
+                    'pl1' => $request->pl1,
+                    'pl2' => $request->pl2,
+                    'pl3' => $request->pl3,
+                    'pl4' => $request->pl4,
+                    'pl5' => $request->pl5,
+                    'pl6' => $request->pl6,
+                    'pl7' => $request->pl7,
+                    'pl8' => $request->pl8,
+                ],
+
+                // PELAPORAN
+                'pelaporan' => [
+                    'si1' => $request->si1,
+                    'si2' => $request->si2,
+                    'si3' => $request->si3,
+                    'si4' => $request->si4,
+                    'si5' => $request->si5,
+                ],
+
+                // MIGAS
+                'migas' => [
+                    'pm1' => $request->pm1,
+                    'pm2' => $request->pm2,
+                    'pm3' => $request->pm3,
+                ],
+
+                'catatan_sik' => $request->catatan_sik,
+
+                // FILE
+                'surat_tugas' => $uploadedFiles,
+            ];
+
+            /* =========================
+         * 3. INSERT KE app_workflow
+         * ========================= */
+            DB::table('app_workflow')->insert([
+
+                'codeid'          => rand(1000, 9999),
+                'projectname'     => $parentWorkflow->projectname,
+                'tipe'            => 'doc',
+                'resi'            => now()->format('YmdHis'),
+                'client'          => $request->client,
+                'processname'     => 'surat_instruksi_kerja_01',
+                'processcategory' => 'New Certification',
+                'createuser'      => Auth::user()->username ?? 'system',
+                'createtime'      => now(),
+                'workflowdata'    => json_encode($workflowdata),
+                'next_status'     => 'proses',
+                'nworkflowid'     => $request->nworkflowid,
+                'last_update'     => now(),
+                'last_status'     => 'proses',
+                'next_taskname'   => 'permohonan',  // 🔥 TAMBAHKAN INI
+                'next_stepname'   => 'step0',  // 🔥 TAMBAHKAN INI
+                'next_rolename'   => 'pemohon',  // 🔥 TAMBAHKAN INI
+                'next_status'     => 'proses',  // 🔥 TAMBAHKAN INI
+                'jns_ijin'        => 006,  // 🔥 TAMBAHKAN INI
+                'jns_layanan'     => 01,  // 🔥 biasanya juga wajib
+                'noreg'           => '',  // 🔥 biasanya juga wajib
+                'nib'             => '',  // 🔥 biasanya juga wajib
+
+            ]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('project_list.sik', $request->nworkflowid)
+                ->with('success', 'SIK berhasil disimpan');
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            return back()
+                ->withErrors($e->getMessage())
+                ->withInput();
+        }
+    }
+
+    public function getLeaderData($workflowid, $userid)
+    {
+        $leaderWorkflow = DB::table('app_workflow')
+            ->where('nworkflowid', $workflowid)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->whereNotNull('workflowdata')
+            ->get()
+            ->first(function ($row) use ($userid) {
+                $json = json_decode($row->workflowdata, true);
+                return ($json['user_inspector'] ?? null) == $userid
+                    && ($json['pilihan_jabatan_project'] ?? null) == 'Leader';
+            });
+
+        if (!$leaderWorkflow) {
+            return response()->json([]);
+        }
+
+        return response()->json(json_decode($leaderWorkflow->workflowdata, true));
+    }
+
+    public function editsik($projectId, $id)
+    {
+        // 🔎 Ambil project induk
+        $parentWorkflow = DB::table('app_workflow')
+            ->where('workflowid', $projectId)
+            ->first();
+
+        if (!$parentWorkflow) {
+            abort(404);
+        }
+
+        $workflowdata1 = json_decode($parentWorkflow->workflowdata, true);
+
+        // 🔎 Ambil data SIK yang akan diedit
+        $sik = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->where('nworkflowid', $projectId) // 🔥 penting supaya tidak salah project
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->first();
+
+        if (!$sik) {
+            abort(404);
+        }
+
+        $workflowdata = json_decode($sik->workflowdata, true);
+
+        $namaInspector = DB::table('sys_users')
+            ->whereIn('rolesid', [20, 18])
+            ->orderBy('userid')
+            ->get();
+
+        // Ambil leader dari project ini saja
+        $leaderUsers = DB::table('app_workflow as w')
+            ->leftJoin(
+                'sys_users as u',
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata, '$.user_inspector'))"),
+                '=',
+                'u.userid'
+            )
+            ->where('w.nworkflowid', $projectId)
+            ->where('w.processname', 'surat_instruksi_kerja_01')
+            ->get()
+            ->filter(function ($row) {
+                $json = json_decode($row->workflowdata, true);
+                return ($json['pilihan_jabatan_project'] ?? null) === 'Leader';
+            })
+            ->map(function ($row) {
+                return (object)[
+                    'userid' => json_decode($row->workflowdata, true)['user_inspector'],
+                    'fullname' => $row->fullname
+                ];
+            });
+
+        $scopes = DB::table('lov_jenis_peralatan as s')
+            ->leftJoin('ref_jenis_peralatan as j', 'j.id', '=', 's.jenis')
+            ->leftJoin('ref_tipe_peralatan as t', 't.id', '=', 's.tipe')
+            ->leftJoin('ref_kategori_peralatan as k', 'k.id', '=', 's.kategori')
+            ->select(
+                's.*',
+                'j.nama as jenis_nama',
+                't.nama as tipe_nama',
+                'k.nama as kategori_nama'
+            )
+            ->where('s.workflowid', $projectId)
+            ->get();
+
+        return view('sik.edit', compact(
+            'sik',
+            'workflowdata',
+            'workflowdata1',
+            'namaInspector',
+            'leaderUsers',
+            'scopes',
+            'parentWorkflow'
+        ));
+    }
+
+    public function updatesik(Request $request, $projectId, $id)
+    {
+        // 🔎 Pastikan SIK milik project tersebut
+        $sik = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->where('nworkflowid', $projectId)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->first();
+
+        if (!$sik) {
+            abort(404);
+        }
+
+        $request->validate([
+            'no_sik' => 'required',
+            'user_inspector' => 'required',
+        ]);
+
+        $workflowdata = json_decode($sik->workflowdata, true);
+
+        /* =========================
+       UPDATE DATA
+    ========================= */
+
+        $workflowdata['tanggal_sik'] = $request->tanggal_sik;
+        $workflowdata['contact_person'] = $request->contact_person;
+
+        $workflowdata['user_inspector'] = $request->user_inspector;
+        $workflowdata['pilihan_jabatan_project'] = $request->pilihan_jabatan_project;
+        $workflowdata['leadnya_pilihan_jabatan_project'] = $request->leadnya_pilihan_jabatan_project;
+
+        $workflowdata['peralatan'] = $request->peralatan;
+
+        $workflowdata['location_job'] = $request->location_job;
+        $workflowdata['area_sik'] = $request->area_sik;
+        $workflowdata['date_start'] = $request->date_start;
+        $workflowdata['date_end'] = $request->date_end;
+        $workflowdata['durasi'] = $request->durasi;
+
+        $workflowdata['persiapan'] = [
+            'peri1' => $request->peri1,
+            'peri2' => $request->peri2,
+            'peri3' => $request->peri3,
+            'peri4' => $request->peri4,
+        ];
+
+        $workflowdata['lapangan'] = [
+            'pl1' => $request->pl1,
+            'pl2' => $request->pl2,
+            'pl3' => $request->pl3,
+            'pl4' => $request->pl4,
+            'pl5' => $request->pl5,
+            'pl6' => $request->pl6,
+            'pl7' => $request->pl7,
+            'pl8' => $request->pl8,
+        ];
+
+        $workflowdata['pelaporan'] = [
+            'si1' => $request->si1,
+            'si2' => $request->si2,
+            'si3' => $request->si3,
+            'si4' => $request->si4,
+            'si5' => $request->si5,
+        ];
+
+        $workflowdata['migas'] = [
+            'pm1' => $request->pm1,
+            'pm2' => $request->pm2,
+            'pm3' => $request->pm3,
+        ];
+
+        $workflowdata['catatan_sik'] = $request->catatan_sik;
+
+        DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->update([
+                'workflowdata' => json_encode($workflowdata),
+                'last_update'  => now(),
+            ]);
+
+        return redirect()
+            ->route('project_list.sik', $projectId)
+            ->with('success', 'SIK berhasil diperbarui');
+    }
+
+    public function deletesik($projectId, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            // 🔎 Ambil SIK berdasarkan project
+            $workflow = DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->where('nworkflowid', $projectId)
+                ->where('processname', 'surat_instruksi_kerja_01')
+                ->first();
+
+            if (!$workflow) {
+                return redirect()
+                    ->route('project_list.sik', $projectId)
+                    ->with('error', 'Data SIK tidak ditemukan');
+            }
+
+            // =========================
+            // PINDAHKAN KE TABLE DELETED
+            // =========================
+            DB::table('app_workflow_deleted')->insert(
+                (array) $workflow + [
+                    'deleted_at' => now(),
+                    'deleted_by' => Auth::user()->username ?? 'system',
+                ]
+            );
+
+            // =========================
+            // HAPUS DARI TABLE UTAMA
+            // =========================
+            DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->delete();
+
+            DB::commit();
+
+            return redirect()
+                ->route('project_list.sik', $projectId)
+                ->with('success', 'SIK berhasil dihapus');
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function extendsik($projectId, $id)
+    {
+        $sik = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->where('nworkflowid', $projectId)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->first();
+
+        if (!$sik) {
+            abort(404);
+        }
+
+        $workflowdata = json_decode($sik->workflowdata, true);
+
+        // 🔥 ambil nama inspector dari sys_users
+        $inspectorName = DB::table('sys_users')
+            ->where('userid', $workflowdata['user_inspector'] ?? null)
+            ->value('fullname');
+
+        return view('sik.extend', compact(
+            'sik',
+            'workflowdata',
+            'projectId',
+            'inspectorName'
+        ));
+    }
+
+    public function storeExtend(Request $request, $projectId, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            $oldSik = DB::table('app_workflow')
+                ->where('workflowid', $id)
+                ->where('nworkflowid', $projectId)
+                ->where('processname', 'surat_instruksi_kerja_01')
+                ->first();
+
+            if (!$oldSik) {
+                throw new \Exception('SIK tidak ditemukan');
+            }
+
+            $oldData = json_decode($oldSik->workflowdata, true);
+
+            // 🔥 clone data lama
+            $newData = $oldData;
+
+            // 🔥 update bagian tanggal saja (extend)
+            $newData['date_start'] = $request->date_start;
+            $newData['date_end']   = $request->date_end;
+            $newData['durasi']     = $request->durasi;
+
+            // tandai sebagai extend
+            $newData['is_extend'] = true;
+            $newData['extend_from'] = $id;
+
+            DB::table('app_workflow')->insert([
+
+                'codeid'          => rand(1000, 9999),
+                'projectname'     => $oldSik->projectname,
+                'tipe'            => 'doc',
+                'resi'            => now()->format('YmdHis'),
+                'client'          => $oldSik->client,
+                'processname'     => 'surat_instruksi_kerja_01',
+                'processcategory' => 'Extend Certification',
+                'createuser'      => Auth::user()->username ?? 'system',
+                'createtime'      => now(),
+                'workflowdata'    => json_encode($newData),
+                'nworkflowid'     => $projectId,
+                'last_update'     => now(),
+                'last_status'     => 'proses',
+                'next_taskname'   => 'permohonan',
+                'next_stepname'   => 'step0',
+                'next_rolename'   => 'pemohon',
+                'next_status'     => 'proses',
+
+                // 🔥 WAJIB TAMBAHKAN INI
+                'jns_ijin'        => 006,
+                'jns_layanan'     => 01,
+                'noreg'           => '',
+                'nib'             => '',
+
+            ]);
+
+
+            DB::commit();
+
+            return redirect()
+                ->route('project_list.sik', $projectId)
+                ->with('success', 'SIK berhasil di-extend');
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function previewSik($id)
+    {
+        $sik = DB::table('app_workflow')
+            ->where('workflowid', $id)
+            ->where('processname', 'surat_instruksi_kerja_01')
+            ->first();
+
+        if (!$sik) {
+            abort(404);
+        }
+
+        $arr = json_decode($sik->workflowdata, true);
+
+        // Ambil project induk
+        $parent = DB::table('app_workflow')
+            ->where('workflowid', $sik->nworkflowid)
+            ->first();
+
+        $raw = json_decode($parent->workflowdata ?? '{}', true);
+
+        // Nama client
+        $namaclient = DB::table('pemohon')
+            ->where('pemohonid', $sik->client)
+            ->value('nama_perusahaan');
+
+        // Nama inspector
+        $nama = DB::table('sys_users')
+            ->where('userid', $arr['user_inspector'] ?? null)
+            ->value('fullname');
+
+        // NIP
+        $nip = DB::table('sys_users_detail')
+            ->where('nama', $nama)
+            ->value('nip');
+
+
+        /* =====================================================
+     * AMBIL NAMA JENIS PERALATAN (JOIN)
+     * ===================================================== */
+
+        $jenisMap = [];
+
+        if (!empty($arr['peralatan'])) {
+
+            $typeIds = collect($arr['peralatan'])
+                ->pluck('type_peralatan')
+                ->filter()
+                ->map(function ($item) {
+                    return (int) $item; // ⬅️ paksa jadi integer
+                })
+                ->unique()
+                ->values();
+
+            $jenisData = DB::table('lov_jenis_peralatan')
+                ->leftJoin('ref_jenis_peralatan', 'lov_jenis_peralatan.jenis', '=', 'ref_jenis_peralatan.id')
+                ->leftJoin('ref_tipe_peralatan', 'lov_jenis_peralatan.tipe', '=', 'ref_tipe_peralatan.id')
+                ->leftJoin('ref_kategori_peralatan', 'lov_jenis_peralatan.kategori', '=', 'ref_kategori_peralatan.id')
+                ->whereIn('lov_jenis_peralatan.id', $typeIds)
+                ->select(
+                    'lov_jenis_peralatan.id',
+                    'ref_jenis_peralatan.nama as nama_jenis',
+                    'ref_tipe_peralatan.nama as nama_tipe',
+                    'ref_kategori_peralatan.nama as nama_kategori'
+                )
+                ->get();
+
+            $jenisMap = $jenisData->keyBy('id');
+        }
+
+        $pdf = Pdf::loadView('sik.pdf', compact(
+            'arr',
+            'raw',
+            'namaclient',
+            'nama',
+            'nip',
+            'jenisMap' // ⬅️ kirim ke blade
+        ))->setPaper('A4', 'portrait');
+
+        return $pdf->stream('SIK.pdf');
     }
 }

@@ -2,6 +2,11 @@
 
 @section('title', 'Project List')
 
+@section('css')
+    <link rel="stylesheet" href="{{ asset('css/adminlte-custom.css') }}">
+@endsection
+
+
 @section('plugins.Datatables', true)
 
 @section('plugins.Select2', true)
@@ -171,7 +176,7 @@
             </div>
         </div>
 
-        <div class="card card-outline card-primary mb-4">
+        <div class="card card-outline card-primary mb-4 card-marketing">
             <div class="card-header py-2">
                 <strong>Syarat Administrasi</strong>
             </div>

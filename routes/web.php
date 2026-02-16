@@ -166,7 +166,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/project-list/scope/get', [OperationController::class, 'getScope'])->name('project_list.scope.get');
     Route::get('/kontrak/view/{filename}', [OperationController::class, 'viewKontrak'])->where('filename', '.*')->name('kontrak.view');
     Route::post('/project-list/file/upload', [OperationController::class, 'uploadMarketingFile'])->name('project_list.file.upload');
-    
+
+    //Surat Instruksi Kerja
+    Route::get('/project-list/{id}/sik', [OperationController::class, 'sik'])->name('project_list.sik');
+    Route::get('/project-list/{id}/createsik', [OperationController::class, 'createsik'])->name('sik.create');
+    Route::post('/project-list/storesik', [OperationController::class, 'storesik'])->name('sik.store');
+    Route::get('/sik/get-leader-data/{workflowid}/{userid}', [OperationController::class, 'getLeaderData']);
+    Route::get('/sik/preview/{id}', [OperationController::class, 'previewSik'])->name('sik.show');
+
+
+    Route::get('/project/{projectId}/sik/{id}/edit', [OperationController::class, 'editsik'])->name('sik.edit');
+    Route::put('/project/{projectId}/sik/{id}', [OperationController::class, 'updatesik'])->name('sik.update');
+    Route::delete('/project/{projectId}/sik/{id}', [OperationController::class, 'deletesik'])->name('sik.delete');
+
+    Route::get('/project-list/{projectId}/sik/{id}/extend', [OperationController::class, 'extendsik'])->name('sik.extend');
+    Route::post('/project-list/{projectId}/sik/{id}/extend', [OperationController::class, 'storeExtend'])->name('sik.storeExtend');
 });
 
 
@@ -237,28 +251,25 @@ Route::middleware('auth')->group(function () {
 
     // APPROVE 
     Route::post('/penawaran/{id}/approve', [PenawaranController::class, 'approve'])
-    ->name('penawaran.approve');
-    Route::post('/penawaran/{id}/revisi', 
-    [App\Http\Controllers\PenawaranController::class, 'revisi']
+        ->name('penawaran.approve');
+    Route::post(
+        '/penawaran/{id}/revisi',
+        [App\Http\Controllers\PenawaranController::class, 'revisi']
     )->name('penawaran.revisi');
 
     //Add/Edit/Delete Prospect
     Route::middleware('auth')->group(function () {
-    Route::get('/ppjb', [PPJBController::class, 'index'])->name('ppjb.index');
-    Route::get('/ppjb/create', [PPJBController::class, 'create'])->name('ppjb.create');
-    Route::post('/ppjb', [PPJBController::class, 'store'])->name('ppjb.store');
-    Route::get('/ppjb/{id}/edit', [PPJBController::class, 'edit'])->name('ppjb.edit');
-    Route::put('/ppjb/{id}', [PPJBController::class, 'update'])->name('ppjb.update');
-    Route::delete('/ppjb/{id}', [PPJBController::class, 'delete'])->name('ppjb.delete');
-    Route::get('/ppjb/{id}/preview', [PPJBController::class, 'preview'])
-    ->name('ppjb.preview');
-    Route::post('/ppjb/{id}/approve', [PPJBController::class, 'approve'])
-    ->name('ppjb.approve');
-    Route::post('/ppjb/{id}/reject', [PPJBController::class, 'reject'])
-    ->name('ppjb.reject');
-
-
-
-});
-
+        Route::get('/ppjb', [PPJBController::class, 'index'])->name('ppjb.index');
+        Route::get('/ppjb/create', [PPJBController::class, 'create'])->name('ppjb.create');
+        Route::post('/ppjb', [PPJBController::class, 'store'])->name('ppjb.store');
+        Route::get('/ppjb/{id}/edit', [PPJBController::class, 'edit'])->name('ppjb.edit');
+        Route::put('/ppjb/{id}', [PPJBController::class, 'update'])->name('ppjb.update');
+        Route::delete('/ppjb/{id}', [PPJBController::class, 'delete'])->name('ppjb.delete');
+        Route::get('/ppjb/{id}/preview', [PPJBController::class, 'preview'])
+            ->name('ppjb.preview');
+        Route::post('/ppjb/{id}/approve', [PPJBController::class, 'approve'])
+            ->name('ppjb.approve');
+        Route::post('/ppjb/{id}/reject', [PPJBController::class, 'reject'])
+            ->name('ppjb.reject');
+    });
 });
