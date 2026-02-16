@@ -17,11 +17,11 @@
             'route_name' => 'project_list.sik',
         ],
         [
-            'key' => 'itp',
-            'label' => 'I.T.P',
-            'icon' => 'fas fa-calendar-check',
-            'route' => '#',
-            'route_name' => 'project_list.itp',
+            'key' => 'documents',
+            'label' => 'Documents',
+            'icon' => 'fas fa-file',
+            'route' => route('documents.index', $workflowid),
+            'route_name' => 'documents.index',
         ],
     ];
 @endphp

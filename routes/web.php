@@ -12,6 +12,7 @@ use App\Http\Controllers\OperationController;
 use App\Http\Controllers\ProspectController;
 use App\Http\Controllers\PenawaranController;
 use App\Http\Controllers\PPJBController;
+use App\Http\Controllers\DocumentController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
@@ -181,6 +182,16 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/project-list/{projectId}/sik/{id}/extend', [OperationController::class, 'extendsik'])->name('sik.extend');
     Route::post('/project-list/{projectId}/sik/{id}/extend', [OperationController::class, 'storeExtend'])->name('sik.storeExtend');
+
+    //Documents
+    Route::get('/documents/{workflow}/{folder?}', [DocumentController::class, 'documents'])->name('documents.index');
+    Route::post('/documents/upload', [DocumentController::class, 'upload'])->name('documents.upload');
+    Route::post('/documents/folder', [DocumentController::class, 'createFolder'])->name('documents.folder');
+    Route::delete('/documents/{id}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::post('/documents/rename/{id}', [DocumentController::class, 'rename'])->name('documents.rename');
+    // ✅ TARUH INI PALING ATAS
+    Route::get('/documents/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::get('/documents/{workflowid}/{folderId?}',[DocumentController::class, 'documents'])->name('documents.index');
 });
 
 
