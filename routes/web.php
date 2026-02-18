@@ -13,6 +13,8 @@ use App\Http\Controllers\ProspectController;
 use App\Http\Controllers\PenawaranController;
 use App\Http\Controllers\PPJBController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\AccountTypeController;
+use App\Http\Controllers\AccountCategoryController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
@@ -191,10 +193,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/documents/rename/{id}', [DocumentController::class, 'rename'])->name('documents.rename');
     // ✅ TARUH INI PALING ATAS
     Route::get('/documents/download', [DocumentController::class, 'download'])->name('documents.download');
-    Route::get('/documents/{workflowid}/{folderId?}',[DocumentController::class, 'documents'])->name('documents.index');
+    Route::get('/documents/{workflowid}/{folderId?}', [DocumentController::class, 'documents'])->name('documents.index');
+});
+
+// Finance (New)
+// Type Account
+Route::middleware('auth')->group(function () {
+    Route::resource('account-types', AccountTypeController::class);
+    Route::resource('account-categories', AccountCategoryController::class);
 });
 
 
+
+
+
+// DAFIT
 // Route::get('/typeperalatan/create', [TypePeralatanController::class, 'create'])->name('typeperalatan.create');
 // Route::post('/typeperalatan', [TypePeralatanController::class, 'store'])->name('typeperalatan.store');
 

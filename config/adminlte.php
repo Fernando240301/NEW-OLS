@@ -411,6 +411,20 @@ return [
                 ],
             ],
         ],
+        [
+            'text' => 'Finance (New)',
+            'icon' => 'fas fa-fw fa-file-invoice-dollar',
+            'submenu' => [
+                [
+                    'text' => 'Account Type',
+                    'route'  => 'account-types.index',
+                ],
+                [
+                    'text' => 'Account Category',
+                    'route' => 'account-categories.index',
+                ],
+            ],
+        ],
         // ['header' => 'labels'],
         // [
         //     'text' => 'important',
