@@ -16,7 +16,10 @@ class ChartOfAccount extends Model
         'parent_id',
         'level',
         'is_active',
-        'is_postable'
+        'is_postable',
+        'is_system',
+        'normal_balance',
+        'opening_balance'
     ];
 
     /*
@@ -25,25 +28,42 @@ class ChartOfAccount extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function accountType()
-    {
-        return $this->belongsTo(AccountType::class);
-    }
-
-    public function accountCategory()
-    {
-        return $this->belongsTo(AccountCategory::class);
-    }
-
     // Parent (atasnya)
     public function parent()
     {
         return $this->belongsTo(ChartOfAccount::class, 'parent_id');
     }
 
-    // Children (bawahnya)
     public function children()
     {
         return $this->hasMany(ChartOfAccount::class, 'parent_id');
+    }
+
+    public function type()
+    {
+        return $this->belongsTo(AccountType::class, 'account_type_id');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(AccountCategory::class, 'account_category_id');
+    }
+
+    public function childrenRecursive()
+    {
+        return $this->children()->with('childrenRecursive');
+    }
+
+    public function getIsHeaderAttribute()
+    {
+        if (!str_contains($this->code, '-')) {
+            return true;
+        }
+
+        if (str_ends_with($this->code, '-000')) {
+            return true;
+        }
+
+        return $this->children()->exists();
     }
 }

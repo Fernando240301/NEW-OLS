@@ -15,6 +15,7 @@ use App\Http\Controllers\PPJBController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\AccountTypeController;
 use App\Http\Controllers\AccountCategoryController;
+use App\Http\Controllers\ChartOfAccountController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
@@ -197,10 +198,12 @@ Route::middleware('auth')->group(function () {
 });
 
 // Finance (New)
-// Type Account
 Route::middleware('auth')->group(function () {
     Route::resource('account-types', AccountTypeController::class);
     Route::resource('account-categories', AccountCategoryController::class);
+    Route::resource('chart-of-accounts', ChartOfAccountController::class)->middleware('auth');
+    Route::post('/chart-of-accounts/import', [ChartOfAccountController::class, 'import'])->name('chart-of-accounts.import');
+    Route::get('chart-of-accounts/generate-code/{parentId}',[ChartOfAccountController::class, 'generateNextCode'])->name('chart-of-accounts.generate-code');
 });
 
 

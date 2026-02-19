@@ -423,6 +423,10 @@ return [
                     'text' => 'Account Category',
                     'route' => 'account-categories.index',
                 ],
+                [
+                    'text' => 'Chart of Account',
+                    'route' => 'chart-of-accounts.index',
+                ],
             ],
         ],
         // ['header' => 'labels'],
