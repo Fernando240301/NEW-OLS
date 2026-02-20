@@ -66,4 +66,9 @@ class ChartOfAccount extends Model
 
         return $this->children()->exists();
     }
+
+    public function journalDetails()
+    {
+        return $this->hasMany(\App\Models\JournalDetail::class, 'account_id');
+    }
 }

@@ -427,6 +427,11 @@ return [
                     'text' => 'Chart of Account',
                     'route' => 'chart-of-accounts.index',
                 ],
+                [
+                    'text' => 'Manual Journal',
+                    'route' => 'journals.index',
+                    'icon' => 'fas fa-fw fa-book',
+                ],
             ],
         ],
         // ['header' => 'labels'],
