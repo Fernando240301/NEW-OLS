@@ -28,20 +28,40 @@
                                 {{ strtoupper($journal->status) }}
                             </span>
                         </td>
-                        <td>
-                            @if ($journal->status == 'draft')
-                                <form method="POST" action="{{ route('journals.post', $journal) }}">
-                                    @csrf
-                                    <button class="btn btn-sm btn-success">Post</button>
-                                </form>
-                            @endif
+                        <td class="d-flex gap-1">
 
-                            @if ($journal->status == 'posted')
-                                <form method="POST" action="{{ route('journals.reverse', $journal) }}">
+                            <a href="{{ route('journals.show', $journal) }}"
+                               class="btn btn-sm btn-info">
+                                Detail
+                            </a>
+                        
+                            @if ($journal->status == 'draft')
+                                <a href="{{ route('journals.edit', $journal) }}"
+                                   class="btn btn-sm btn-warning">
+                                    Edit
+                                </a>
+                        
+                                <form method="POST"
+                                      action="{{ route('journals.post', $journal) }}"
+                                      class="d-inline">
                                     @csrf
-                                    <button class="btn btn-sm btn-danger">Reverse</button>
+                                    <button class="btn btn-sm btn-success">
+                                        Post
+                                    </button>
                                 </form>
                             @endif
+                        
+                            @if ($journal->status == 'posted')
+                                <form method="POST"
+                                      action="{{ route('journals.reverse', $journal) }}"
+                                      class="d-inline">
+                                    @csrf
+                                    <button class="btn btn-sm btn-danger">
+                                        Reverse
+                                    </button>
+                                </form>
+                            @endif
+                        
                         </td>
                     </tr>
                 @endforeach

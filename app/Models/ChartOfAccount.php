@@ -71,4 +71,9 @@ class ChartOfAccount extends Model
     {
         return $this->hasMany(\App\Models\JournalDetail::class, 'account_id');
     }
+
+    public function glEntries()
+    {
+        return $this->hasMany(\App\Models\GlEntry::class, 'account_id');
+    }
 }

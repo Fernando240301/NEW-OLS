@@ -17,6 +17,10 @@ use App\Http\Controllers\AccountTypeController;
 use App\Http\Controllers\AccountCategoryController;
 use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\TrialBalanceController;
+use App\Http\Controllers\GeneralLedgerController;
+use App\Http\Controllers\IncomeStatementController;
+use App\Http\Controllers\BalanceSheetController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
@@ -211,6 +215,11 @@ Route::middleware('auth')->group(function () {
         Route::post('journals/{journal}/post', [JournalController::class, 'post'])->name('journals.post');
         Route::post('journals/{journal}/reverse', [JournalController::class, 'reverse'])->name('journals.reverse');
     });
+
+    Route::get('/trial-balance', [TrialBalanceController::class, 'index'])->name('trial.balance');
+    Route::get('/general-ledger', [GeneralLedgerController::class, 'index'])->name('general.ledger');
+    Route::get('/income-statement', [IncomeStatementController::class, 'index'])->name('income.statement');
+    Route::get('/balance-sheet', [BalanceSheetController::class, 'index'])->name('balance.sheet');
 });
 
 

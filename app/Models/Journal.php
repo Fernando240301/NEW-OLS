@@ -37,4 +37,14 @@ class Journal extends Model
     {
         return $this->belongsTo(Journal::class, 'reversal_of');
     }
+
+    public function audits()
+    {
+        return $this->hasMany(JournalAudit::class);
+    }
+
+    public function glEntries()
+    {
+        return $this->hasMany(GlEntry::class);
+    }
 }

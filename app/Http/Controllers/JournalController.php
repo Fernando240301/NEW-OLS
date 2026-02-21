@@ -52,12 +52,11 @@ class JournalController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'journal_date' => 'required|date',
-            'details' => 'required|array|min:2',
-        ]);
-
-        $journal = $this->service->createDraft($request->all());
+        try {
+            $journal = $this->service->createDraft($request->all());
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+        }
 
         return redirect()->route('journals.index')
             ->with('success', 'Journal berhasil dibuat.');
@@ -87,5 +86,42 @@ class JournalController extends Controller
         $this->service->reverse($journal);
 
         return back()->with('success', 'Journal berhasil direverse.');
+    }
+
+    public function show(Journal $journal)
+    {
+        $journal->load(['details.account']);
+
+        return view('finance.journals.show', compact('journal'));
+    }
+
+    public function edit(Journal $journal)
+    {
+        if ($journal->status !== 'draft') {
+            abort(403, 'Hanya draft yang bisa diedit.');
+        }
+
+        $journal->load('details');
+
+        $accounts = ChartOfAccount::where('is_postable', true)
+            ->orderBy('code')
+            ->get();
+
+        return view('finance.journals.edit', compact('journal', 'accounts'));
+    }
+
+    public function update(Request $request, Journal $journal)
+    {
+        try {
+
+            $this->service->updateDraft($journal, $request->all());
+
+            return redirect()
+                ->route('journals.show', $journal)
+                ->with('success', 'Journal berhasil diupdate.');
+        } catch (\Exception $e) {
+
+            dd($e->getMessage());
+        }
     }
 }

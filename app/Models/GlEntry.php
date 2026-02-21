@@ -4,22 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class JournalDetail extends Model
+class GlEntry extends Model
 {
     protected $fillable = [
         'journal_id',
         'account_id',
-        'project_id',
+        'entry_date',
         'debit',
         'credit',
-        'memo',
     ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | RELATIONSHIPS
-    |--------------------------------------------------------------------------
-    */
 
     public function journal()
     {
@@ -29,10 +22,5 @@ class JournalDetail extends Model
     public function account()
     {
         return $this->belongsTo(ChartOfAccount::class, 'account_id');
-    }
-
-    public function project()
-    {
-        return $this->belongsTo(Project::class);
     }
 }

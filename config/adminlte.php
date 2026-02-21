@@ -416,21 +416,59 @@ return [
             'icon' => 'fas fa-fw fa-file-invoice-dollar',
             'submenu' => [
                 [
-                    'text' => 'Account Type',
-                    'route'  => 'account-types.index',
+                    'text' => 'Master Data',
+                    'submenu' => [
+                        [
+                            'text' => 'Chart of Accounts',
+                            'route' => 'chart-of-accounts.index',
+                            'icon' => 'fas fa-sitemap',
+                        ],
+                        [
+                            'text' => 'Account Type',
+                            'route'  => 'account-types.index',
+                        ],
+                        [
+                            'text' => 'Account Category',
+                            'route' => 'account-categories.index',
+                        ],
+                    ],
                 ],
+
                 [
-                    'text' => 'Account Category',
-                    'route' => 'account-categories.index',
+                    'text' => 'Transaction',
+                    'submenu' => [
+                        [
+                            'text' => 'Manual Journal',
+                            'route' => 'journals.index',
+                            'icon' => 'fas fa-book-open',
+                        ],
+                    ],
                 ],
+
                 [
-                    'text' => 'Chart of Account',
-                    'route' => 'chart-of-accounts.index',
-                ],
-                [
-                    'text' => 'Manual Journal',
-                    'route' => 'journals.index',
-                    'icon' => 'fas fa-fw fa-book',
+                    'text' => 'Reports',
+                    'submenu' => [
+                        [
+                            'text' => 'Trial Balance',
+                            'route' => 'trial.balance',
+                            'icon' => 'fas fa-balance-scale',
+                        ],
+                        [
+                            'text' => 'General Ledger',
+                            'route' => 'general.ledger',
+                            'icon' => 'fas fa-book',
+                        ],
+                        [
+                            'text' => 'Income Statement',
+                            'route' => 'income.statement',
+                            'icon' => 'fas fa-chart-line',
+                        ],
+                        [
+                            'text' => 'Balance Sheet',
+                            'route' => 'balance.sheet',
+                            'icon' => 'fas fa-landmark',
+                        ],
+                    ],
                 ],
             ],
         ],
