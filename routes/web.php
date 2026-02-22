@@ -21,6 +21,8 @@ use App\Http\Controllers\TrialBalanceController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\IncomeStatementController;
 use App\Http\Controllers\BalanceSheetController;
+use App\Http\Controllers\PeriodController;
+use App\Http\Controllers\PpjbnewController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
@@ -214,12 +216,19 @@ Route::middleware('auth')->group(function () {
         Route::resource('journals', JournalController::class);
         Route::post('journals/{journal}/post', [JournalController::class, 'post'])->name('journals.post');
         Route::post('journals/{journal}/reverse', [JournalController::class, 'reverse'])->name('journals.reverse');
+        Route::post('ppjb-new/{id}/approve', [PpjbnewController::class, 'approve'])->name('ppjb-new.approve');
     });
 
     Route::get('/trial-balance', [TrialBalanceController::class, 'index'])->name('trial.balance');
     Route::get('/general-ledger', [GeneralLedgerController::class, 'index'])->name('general.ledger');
     Route::get('/income-statement', [IncomeStatementController::class, 'index'])->name('income.statement');
     Route::get('/balance-sheet', [BalanceSheetController::class, 'index'])->name('balance.sheet');
+    Route::get('/periods', [PeriodController::class, 'index'])->name('period.index');
+    Route::post('/periods/{period}/close', [PeriodController::class, 'close'])->name('period.close');
+    Route::get('/periods/{period}', [PeriodController::class, 'show'])->name('period.show');
+
+    // PPJB
+    Route::resource('ppjb-new', PpjbnewController::class);
 });
 
 

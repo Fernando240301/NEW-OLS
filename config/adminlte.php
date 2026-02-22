@@ -416,24 +416,21 @@ return [
             'icon' => 'fas fa-fw fa-file-invoice-dollar',
             'submenu' => [
                 [
-                    'text' => 'Master Data',
+                    'text' => 'PPJB',
+                    'icon' => 'fas fa-file-contract',
                     'submenu' => [
                         [
-                            'text' => 'Chart of Accounts',
-                            'route' => 'chart-of-accounts.index',
-                            'icon' => 'fas fa-sitemap',
+                            'text' => 'List PPJB',
+                            'route' => 'ppjb-new.index',
+                            'icon' => 'fas fa-list'
                         ],
                         [
-                            'text' => 'Account Type',
-                            'route'  => 'account-types.index',
+                            'text' => 'Buat PPJB',
+                            'route' => 'ppjb-new.create',
+                            'icon' => 'fas fa-plus'
                         ],
-                        [
-                            'text' => 'Account Category',
-                            'route' => 'account-categories.index',
-                        ],
-                    ],
+                    ]
                 ],
-
                 [
                     'text' => 'Transaction',
                     'submenu' => [
@@ -444,7 +441,6 @@ return [
                         ],
                     ],
                 ],
-
                 [
                     'text' => 'Reports',
                     'submenu' => [
@@ -467,6 +463,29 @@ return [
                             'text' => 'Balance Sheet',
                             'route' => 'balance.sheet',
                             'icon' => 'fas fa-landmark',
+                        ],
+                        [
+                            'text' => 'Accounting Period',
+                            'route' => 'period.index',
+                            'icon' => 'fas fa-lock',
+                        ],
+                    ],
+                ],
+                [
+                    'text' => 'Master Data',
+                    'submenu' => [
+                        [
+                            'text' => 'Chart of Accounts',
+                            'route' => 'chart-of-accounts.index',
+                            'icon' => 'fas fa-sitemap',
+                        ],
+                        [
+                            'text' => 'Account Type',
+                            'route'  => 'account-types.index',
+                        ],
+                        [
+                            'text' => 'Account Category',
+                            'route' => 'account-categories.index',
                         ],
                     ],
                 ],
