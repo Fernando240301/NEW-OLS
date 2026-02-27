@@ -23,6 +23,7 @@ use App\Http\Controllers\IncomeStatementController;
 use App\Http\Controllers\BalanceSheetController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PpjbnewController;
+use App\Http\Controllers\LpjbController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
@@ -217,6 +218,16 @@ Route::middleware('auth')->group(function () {
         Route::post('journals/{journal}/post', [JournalController::class, 'post'])->name('journals.post');
         Route::post('journals/{journal}/reverse', [JournalController::class, 'reverse'])->name('journals.reverse');
         Route::post('ppjb-new/{id}/approve', [PpjbnewController::class, 'approve'])->name('ppjb-new.approve');
+        Route::post('/ppjb-new/{id}/revise', [PpjbnewController::class, 'revise'])->name('ppjb-new.revise');
+        Route::get('/ppjb/{id}/pdf', [PpjbnewController::class, 'pdf'])->name('ppjb-new.pdf');
+        Route::get('/lpjb/create/{ppjb}', [LpjbController::class, 'create'])->name('lpjb.create');
+        Route::post('/lpjb/store/{ppjb}', [LpjbController::class, 'store'])->name('lpjb.store');
+        Route::get('/lpjb/{id}', [LpjbController::class, 'show'])->name('lpjb.show');
+        Route::get('/lpjb/{id}/edit', [LpjbController::class, 'edit'])->name('lpjb.edit');
+        Route::put('/lpjb/{id}', [LpjbController::class, 'update'])->name('lpjb.update');
+        Route::post('/lpjb/{id}/approve', [LpjbController::class, 'approve'])->name('lpjb.approve');
+        Route::post('/lpjb/{id}/revise', [LpjbController::class, 'revise'])->name('lpjb.revise');
+        Route::get('/lpjb/{id}/pdf', [LpjbController::class, 'pdf'])->name('lpjb.pdf');
     });
 
     Route::get('/trial-balance', [TrialBalanceController::class, 'index'])->name('trial.balance');
@@ -317,11 +328,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/ppjb/{id}/edit', [PPJBController::class, 'edit'])->name('ppjb.edit');
         Route::put('/ppjb/{id}', [PPJBController::class, 'update'])->name('ppjb.update');
         Route::delete('/ppjb/{id}', [PPJBController::class, 'delete'])->name('ppjb.delete');
-        Route::get('/ppjb/{id}/preview', [PPJBController::class, 'preview'])
-            ->name('ppjb.preview');
-        Route::post('/ppjb/{id}/approve', [PPJBController::class, 'approve'])
-            ->name('ppjb.approve');
-        Route::post('/ppjb/{id}/reject', [PPJBController::class, 'reject'])
-            ->name('ppjb.reject');
+        Route::get('/ppjb/{id}/preview', [PPJBController::class, 'preview'])->name('ppjb.preview');
+        Route::post('/ppjb/{id}/approve', [PPJBController::class, 'approve'])->name('ppjb.approve');
+        Route::post('/ppjb/{id}/reject', [PPJBController::class, 'reject'])->name('ppjb.reject');
+        Route::get('/verifikasi/ppjb', [PpjbnewController::class, 'verifikasi'])->name('verifikasi.ppjb');
+        Route::post('/verifikasi/ppjb/{id}/approve', [PpjbnewController::class, 'approve'])->name('verifikasi.ppjb.approve');
     });
 });

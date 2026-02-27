@@ -338,11 +338,15 @@ return [
         // ],
         [
             'text' => 'Verifikasi',
-            'icon' => 'fas fa-fw fa-check-circle',
+            'icon' => 'fas fa-file-signature',
             'submenu' => [
                 [
                     'text' => 'Verifikasi WA',
                     'route' => 'verifikasi.work_assignment', // ⬅️ PAKAI NAME ROUTE
+                ],
+                [
+                    'text' => 'Verifikasi PPJB',
+                    'route' => 'verifikasi.ppjb',
                 ],
             ],
         ],

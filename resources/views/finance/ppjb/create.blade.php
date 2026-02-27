@@ -23,19 +23,65 @@
                 <div class="row">
                     <div class="col-md-6">
                         <label>Kepada</label>
-                        <input type="text" name="kepada" class="form-control" value="Direktur Utama">
+                        <input type="text" name="kepada" class="form-control" value="Dept. Keuangan">
                     </div>
 
                     <div class="col-md-6">
                         <label>Dari</label>
-                        <input type="text" name="dari" class="form-control">
+                        <select name="dari" id="dari" class="form-control" required>
+                            <option value="">-- Pilih Departemen --</option>
+                            <option value="Dept. Operasional">Dept. Operasional</option>
+                            <option value="Dept. Marketing">Dept. Marketing</option>
+                            <option value="Dept. Keuangan">Dept. Keuangan</option>
+                            <option value="Dept. IT">Dept. IT</option>
+                            <option value="Dept. HR/GA">Dept. HR/GA</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="row mt-3">
+                <div class="row mt-12">
+
+                    <div class="col-md-12">
+                        <label>Pengajuan Untuk</label>
+                        <select name="jenis_pengajuan" id="jenis_pengajuan" class="form-control" required>
+                            <option value="">-- Pilih --</option>
+                            <option value="project">Project</option>
+                            <option value="non_project">Non Project</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div id="projectSection" style="display:none;">
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <label>Pilih Project (SIK)</label>
+                            <select name="workflow_id" id="projectSelect" class="form-control select2">
+
+                                <option value="">-- Pilih Project --</option>
+
+                                @foreach ($projects as $project)
+                                    <option value="{{ $project['workflowid'] }}"
+                                        data-noproject="{{ $project['no_project'] }}"
+                                        data-start="{{ $project['date_start'] }}" data-end="{{ $project['date_end'] }}">
+                                        {{ $project['no_sik'] }}
+                                        @if ($project['extend'])
+                                            (Extend)
+                                        @endif
+                                        | {{ $project['client'] }}
+                                        | {{ $project['location'] }}
+                                    </option>
+                                @endforeach
+
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3" id="projectInfoSection" style="display:none;">
                     <div class="col-md-6">
                         <label>No Project</label>
-                        <input type="text" name="project_no" class="form-control">
+                        <input type="text" name="project_no" id="project_no" class="form-control" readonly>
                     </div>
 
                     <div class="col-md-6">
@@ -47,24 +93,46 @@
                 <div class="row mt-3">
                     <div class="col-md-6">
                         <label>Tanggal Permohonan</label>
-                        <input type="date" name="tanggal_permohonan" class="form-control">
+                        <input type="date" name="tanggal_permohonan" class="form-control"
+                            value="{{ old('tanggal_permohonan', \Carbon\Carbon::today()->format('Y-m-d')) }}" required>
                     </div>
 
                     <div class="col-md-6">
                         <label>Tanggal Dibutuhkan</label>
-                        <input type="date" name="tanggal_dibutuhkan" class="form-control">
+
+                        {{-- FIELD TAMPILAN --}}
+                        <input type="text" id="tanggal_display" class="form-control">
+
+                        {{-- HIDDEN FIELD UNTUK SIMPAN --}}
+                        <input type="hidden" name="tanggal_mulai" id="tanggal_mulai">
+                        <input type="hidden" name="tanggal_selesai" id="tanggal_selesai">
+
                     </div>
                 </div>
 
                 <div class="row mt-3">
                     <div class="col-md-6">
                         <label>Pekerjaan</label>
-                        <input type="text" name="pekerjaan" class="form-control">
+                        <input type="text" name="pekerjaan" id="pekerjaan" class="form-control">
                     </div>
 
                     <div class="col-md-6">
+
                         <label>PIC</label>
-                        <input type="text" name="pic" class="form-control">
+
+                        {{-- MODE NORMAL --}}
+                        <div id="picNormal">
+                            <input type="text" class="form-control" value="{{ $user->fullname }}" readonly>
+
+                            <input type="hidden" name="pic" id="picHidden" value="{{ $user->fullname }}">
+                        </div>
+
+                        {{-- MODE SPECIAL --}}
+                        <div id="picSpecial" style="display:none;">
+                            <select name="pic_special" id="picSelect" class="form-control select2" style="width:100%;">
+                            </select>
+                        </div>
+
                     </div>
                 </div>
 
@@ -232,6 +300,131 @@
         $(document).on('click', '.removeRow', function() {
             $(this).closest('tr').remove();
             calculateGrandTotal();
+        });
+
+        $(document).ready(function() {
+
+            $('#picSelect').select2({
+                width: '100%',
+                dropdownAutoWidth: true
+            });
+
+            function generateRekeningOptions() {
+
+                let select = $('#picSelect');
+
+                if (select.hasClass("select2-hidden-accessible")) {
+                    select.select2('destroy');
+                }
+
+                select.empty();
+
+                select.append(`<option value="{{ $user->fullname }}">
+        {{ $user->fullname }}
+    </option>`);
+
+                for (let i = 1; i <= 50; i++) {
+                    select.append(`<option value="Rekening ${i}">
+            Rekening ${i}
+        </option>`);
+                }
+
+                select.select2({
+                    width: '100%',
+                    dropdownAutoWidth: true
+                });
+            }
+
+            $('#pekerjaan').on('keyup change', function() {
+
+                let value = $(this).val().toLowerCase();
+
+                const keywords = [
+                    'pemkes',
+                    'pemeriksaan keselamatan'
+                ];
+
+                let found = keywords.some(keyword => value.includes(keyword));
+
+                if (found) {
+                    $('#picNormal').hide();
+                    $('#picSpecial').show();
+                    generateRekeningOptions();
+                } else {
+                    $('#picSpecial').hide();
+                    $('#picNormal').show();
+                }
+
+            });
+
+        });
+
+        $('#projectSelect').on('change', function() {
+
+            let selected = $(this).find(':selected');
+
+            // 🔥 AMBIL NO PROJECT
+            let noProject = selected.data('noproject');
+            $('#project_no').val(noProject);
+
+            // 🔥 AMBIL TANGGAL
+            let startDate = selected.data('start');
+            let endDate = selected.data('end');
+
+            if (startDate && endDate) {
+
+                if (startDate === endDate) {
+                    $('#tanggal_display').val(startDate);
+                } else {
+                    $('#tanggal_display').val(startDate + ' s.d ' + endDate);
+                }
+
+                $('#tanggal_mulai').val(startDate);
+                $('#tanggal_selesai').val(endDate);
+            }
+
+        });
+
+        $('#jenis_pengajuan').change(function() {
+
+            let val = $(this).val();
+
+            if (val === 'project') {
+
+                $('#projectSection').slideDown();
+                $('#projectInfoSection').slideDown();
+
+                $('#tanggal_display')
+                    .attr('type', 'text')
+                    .prop('readonly', true)
+                    .val('');
+
+            } else {
+
+                $('#projectSection').slideUp();
+                $('#projectInfoSection').slideUp();
+
+                $('#projectSelect').val('').trigger('change');
+
+                $('#tanggal_display')
+                    .attr('type', 'date')
+                    .prop('readonly', false)
+                    .val('');
+            }
+
+            $('#tanggal_mulai').val('');
+            $('#tanggal_selesai').val('');
+        });
+
+        $('#tanggal_display').on('change', function() {
+
+            let date = $(this).val();
+
+            if (date) {
+                $('#tanggal_mulai').val(date);
+                $('#tanggal_selesai').val(date);
+            }
+
         });
     </script>
 @stop

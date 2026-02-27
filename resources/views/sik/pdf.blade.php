@@ -448,7 +448,7 @@
         <tr>
             <td width="25%" class="ttd-box">
                 <div class="ttd-title">Pemberi Tugas</div>
-                <img src="{{ public_path('uploadfile/ttd/ttd pak rony.png') }}" class="ttd-img">
+                <img src="{{ public_path('uploadfile/ttd/ttd_OCM.png') }}" class="ttd-img">
                 <div class="ttd-jabatan">Manager Operasional</div>
             </td>
 
