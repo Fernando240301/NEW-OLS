@@ -48,5 +48,23 @@ class PPJB extends Model
     {
         return $this->hasMany(PPJBApproval::class, 'ppjb_id', 'id');
     }
+    public function currentApproval()
+{
+    return $this->approvals()
+        ->where('user_id', auth()->user()->userid)
+        ->where('is_approved', false)
+        ->orderBy('level')
+        ->first();
+}
+
+public function canApprove()
+{
+    return $this->approvals()
+        ->where('user_id', auth()->user()->userid)
+        ->where('is_approved', false)
+        ->exists();
+}
+
+
 
 }

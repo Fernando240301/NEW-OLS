@@ -1,11 +1,11 @@
 @extends('adminlte::page')
 
-@section('title', 'Data PPJB')
+@section('title', 'Data DAFTAR PO')
 
 @section('plugins.Datatables', true)
 
 @section('content_header')
-    <h1>Data PPJB</h1>
+    <h1>Data DAFTAR PO</h1>
 @endsection
 
 @section('content')
@@ -13,7 +13,7 @@
     <div class="card-header">
         <h3 class="card-title">📦 Data PPJB</h3>
         <div class="card-tools">
-            <a href="{{ route('ppjb.create') }}" class="btn btn-primary btn-sm">
+            <a href="{{ route('daftarpo.create') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> Tambah Data
             </a>
         </div>
@@ -21,17 +21,15 @@
 
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-bordered table-hover" id="PPJBTable">
+            <table class="table table-bordered table-hover" id="daftarpoTable">
                 <thead>
                     <tr>
                         <th>No</th>
                         <th>No Surat</th>
-                        <th>Dari</th>
-                        <th>Tanggal Permohonan</th>
-                        <th>Tanggal Dibutuhkan</th>
-                        <th>Project No.</th>
-                        <th>PIC</th>
-                        <th>Status PPJB</th>
+                        <th>Nama Pengaju</th>
+                        <th>Kepada</th>
+                        <th>Dokumen Penawaran</th>
+                        <th>Status PO</th>
                         <th class="text-center">Action</th>
                     </tr>
                 </thead>
@@ -39,48 +37,58 @@
                     @foreach ($data as $item)
                     <tr>
                         <td>{{ $loop->iteration }}</td>
-                        <td>{{ $item->nosurat }}</td>
-                        <td>{{ $item->dari }}</td>
-                        <td>{{ $item->tanggal_permohonan }}</td>
-                        <td>{{ $item->tanggal_dibutuhkan }}</td>
-                        <td>{{ $item->project }}</td>
-                        <td>{{ $item->PIC }}</td>
+                        <td>{{ $item->no_surat }}</td>
+                        <td>{{ $item->namapengaju }}</td>                       
+                        <td>{{ $item->to }}</td>
+                        <td class="text-center">
+    @if($item->file_penawaran)
+
+        <a href="{{ asset('storage/' . $item->file_penawaran) }}"
+           target="_blank"
+           class="btn btn-primary btn-sm">
+            <i class="fas fa-eye"></i> Preview
+        </a>
+
+    @else
+        <span class="badge bg-secondary">Belum Upload</span>
+    @endif
+</td>
                         <td>
-                            @if($item->status_ppjb == 'APPROVED FINAL')
+                            @if($item->status_daftarpo == 'APPROVED FINAL')
                                 <span class="badge bg-success">Approved</span>
-                            @elseif(str_contains($item->status_ppjb,'MENUNGGU'))
-                                <span class="badge bg-warning">{{ $item->status_ppjb }}</span>
+                            @elseif(str_contains($item->status_daftarpo,'MENUNGGU'))
+                                <span class="badge bg-warning">{{ $item->status_daftarpo }}</span>
                             @else
-                                <span class="badge bg-danger">{{ $item->status_ppjb }}</span>
+                                <span class="badge bg-danger">{{ $item->status_daftarpo }}</span>
                             @endif
                         </td>
                         <td class="text-center">
                             {{-- Edit --}}
-                            <a href="{{ route('ppjb.edit', $item->id) }}"
+                            <a href="{{ route('daftarpo.edit', $item->id) }}"
                                class="btn btn-warning btn-sm me-1 mb-1"
                                onclick="event.stopPropagation();">
-                               Edit
+                               Revisi
                             </a>
 
-                            {{-- Hapus --}}
-                            <form action="{{ route('ppjb.delete', $item->id) }}" method="POST" style="display:inline-block;">
+                            <!-- {{-- Hapus --}}
+                            <form action="{{ route('daftarpo.destroy', $item->id) }}" method="POST" style="display:inline-block;">
                                 @csrf
                                 @method('DELETE')
                                 <button class="btn btn-danger btn-sm mb-1"
                                     onclick="return confirm('Yakin ingin menghapus data ini?')">
                                     Hapus
                                 </button>
-                            </form>
+                            </form> -->
 
                             {{-- Preview --}}
-                            <a href="{{ route('ppjb.preview', $item->id) }}"
+                            <a href="{{ route('daftarpo.preview', $item->id) }}"
                                target="_blank"
                                class="btn btn-primary btn-sm me-1 mb-1">
                                Preview
                             </a>
  
 @if($item->canApprove())
-    <form action="{{ route('ppjb.approve', $item->id) }}" method="POST" style="display:inline-block;">
+    <form action="{{ route('daftarpo.approve', $item->id) }}" method="POST" style="display:inline-block;">
         @csrf
         <button class="btn btn-success btn-sm">
             Approve
@@ -100,7 +108,7 @@
 @section('js')
 <script>
 $(document).ready(function() {
-    $('#PPJBTable').DataTable({
+    $('#daftarpoTable').DataTable({
         "paging": true,
         "lengthChange": true,
         "searching": true,

@@ -12,7 +12,9 @@ use App\Http\Controllers\OperationController;
 use App\Http\Controllers\ProspectController;
 use App\Http\Controllers\PenawaranController;
 use App\Http\Controllers\PPJBController;
+use App\Http\Controllers\DaftarPOController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DailyActivityController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
 use Illuminate\Support\Facades\Mail;
@@ -242,7 +244,7 @@ Route::middleware('auth')->group(function () {
     [App\Http\Controllers\PenawaranController::class, 'revisi']
     )->name('penawaran.revisi');
 
-    //Add/Edit/Delete Prospect
+    //Add/Edit/Delete PPJB
     Route::middleware('auth')->group(function () {
     Route::get('/ppjb', [PPJBController::class, 'index'])->name('ppjb.index');
     Route::get('/ppjb/create', [PPJBController::class, 'create'])->name('ppjb.create');
@@ -258,7 +260,60 @@ Route::middleware('auth')->group(function () {
     ->name('ppjb.reject');
 
 
+Route::get('/verifikasi/penawaran', [PenawaranController::class, 'verifikasiIndex'])->name('verifikasi.penawaran');
+Route::post('/penawaran/{id}/approve', [PenawaranController::class, 'approve'])
+    ->name('penawaran.approve');
+Route::post('/penawaran/{id}/revisi', 
+    [App\Http\Controllers\PenawaranController::class, 'revisi']
+    )->name('penawaran.revisi');
 
 });
+Route::get('/verifikasi/ppjb', [PPJBController::class, 'verifikasiIndex'])->name('verifikasi.ppjb');
+Route::post('/ppjb/{id}/approve', [PPJBController::class, 'approve'])
+    ->name('ppjb.approve');
+Route::post('/ppjb/{id}/revisi', 
+    [App\Http\Controllers\PPJBController::class, 'revisi']
+    )->name('ppjb.revisi');
 
+    
 });
+ //Add/Edit/Delete Prospect
+    Route::middleware('auth')->group(function () {
+    Route::get('/daftarpo', [DaftarPOController::class, 'index'])
+    ->name('daftarpo.index');
+    Route::get('/daftarpo/create', [DaftarPOController::class, 'create'])->name('daftarpo.create');
+    Route::post('/daftarpo', [DaftarPOController::class, 'store'])->name('daftarpo.store');
+    Route::get('/daftarpo/{id}/edit', [DaftarPOController::class, 'edit'])->name('daftarpo.edit');
+    Route::put('/daftarpo/{id}', [DaftarPOController::class, 'update'])->name('daftarpo.update');
+    Route::delete('/daftarpo/{id}', [DaftarPOController::class, 'delete'])->name('daftarpo.delete');
+    Route::get('/daftarpo/{id}/preview', [DaftarPOController::class, 'preview'])
+    ->name('daftarpo.preview');
+    Route::post('/daftarpo/{id}/approve', [DaftarPOController::class, 'approve'])
+    ->name('daftarpo.approve');
+    Route::post('/daftarpo/{id}/reject',[DaftarPOController::class, 'reject'])
+    ->name('daftarpo.reject');
+    Route::post('/daftarpo/{id}/upload',[DaftarPOController::class, 'upload'])
+    ->name('daftarpo.upload');
+    Route::post('/daftarpo/upload-penawaran/{id}',[DaftarPOController::class, 'uploadPenawaran'])->name('daftarpo.upload.penawaran');
+    Route::delete('/daftarpo/{id}', [DaftarPOController::class, 'destroy'])
+    ->name('daftarpo.destroy');
+    Route::get('/verifikasi/daftarpo', [DaftarPOController::class, 'verifikasiInDex'])->name('verifikasi.daftarpo');
+
+    Route::get('/activity', [DailyActivityController::class, 'index'])
+    ->name('activity.index');
+    Route::get('/activity/create', [DailyActivityController::class, 'create'])->name('activity.create');
+    Route::post('/activity/store', [DailyActivityController::class, 'store'])
+    ->name('activity.store');
+    Route::get('/verifikasi/activity', [DailyActivityController::class, 'verifikasiInDex'])->name('verifikasi.activity');
+    Route::get('/activity/events', 
+    [DailyActivityController::class, 'events']
+    )->name('activity.events');
+    Route::post('/activity/{id}/approve',[DailyActivityController::class, 'approve']
+    )->name('activity.approve'); 
+    Route::post('/activity/{id}/reject',[DailyActivityController::class, 'reject'])->name('activity.reject');
+    });
+    
+
+
+
+

@@ -337,6 +337,16 @@ return [
         //     'icon' => 'fas fa-fw fa-user',
         // ],
         [
+            'text' => 'Acitivity',
+            'icon' => 'fas fa-fw fa-table',
+            'submenu' => [
+                [
+                    'text' => 'Daily Activity',
+                    'url'  => '/activity',
+                ],
+            ],
+        ],
+        [
             'text' => 'Verifikasi',
             'icon' => 'fas fa-fw fa-check-circle',
             'submenu' => [
@@ -344,6 +354,24 @@ return [
                     'text' => 'Verifikasi WA',
                     'route' => 'verifikasi.work_assignment', // ⬅️ PAKAI NAME ROUTE
                 ],
+                [
+                    'text' => 'Verifikasi Penawaran',
+                    'route' => 'verifikasi.penawaran', // ⬅️ PAKAI NAME ROUTE
+                ],
+                [
+                    'text' => 'Verifikasi PPJB',
+                    'route' => 'verifikasi.ppjb', // ⬅️ PAKAI NAME ROUTE
+                ],
+                [
+                    'text' => 'Verifikasi P.O',
+                    'route' => 'verifikasi.daftarpo', // ⬅️ PAKAI NAME ROUTE
+                ],
+                [
+                    'text' => 'Verifikasi Daily Activity',
+                    'route' => 'verifikasi.activity', // ⬅️ PAKAI NAME ROUTE
+                ],
+
+                
             ],
         ],
         [
@@ -365,24 +393,30 @@ return [
             ],
         ],
         [
-<<<<<<< HEAD
-            'text' => 'Operation',
-            'icon' => 'fas fa-fw fa-cogs',
-            'submenu' => [
-                [
-                    'text' => 'Project List',
-                    'url'  => '/project-list',
-=======
+    'text' => 'Operation',
+    'icon' => 'fas fa-fw fa-cogs',
+    'submenu' => [
+        [
+            'text' => 'Project List',
+            'url'  => '/project-list',
+        ],
+    ],
+],
+        [
             'text' => 'Finance',
             'icon' => 'fas fa-receipt',
             'submenu' => [
                 [
                     'text' => 'PPJB',
-                    'route' => 'ppjb.index', // ⬅️ PAKAI NAME ROUTE
->>>>>>> d9f2faf (revisi prospect)
+                    'route' => 'ppjb.index',
+                ],
+                [
+                    'text' => 'DAFTAR P.O',
+                    'route' => 'daftarpo.index',
                 ],
             ],
         ],
+
         [
             'text' => 'Client',
             'url' => 'client',

@@ -1,11 +1,11 @@
 @extends('adminlte::page')
 
-@section('title', 'Penawaran')
+@section('title', 'VERIFIKASI PENAWARAN')
 
 @section('plugins.Datatables', true)
 
 @section('content_header')
-    <h1>Penawaran</h1>
+    <h1>VERIFIKASI PENAWARAN</h1>
 @endsection
 
 @section('content')
@@ -25,11 +25,11 @@
 <div class="card">
     <div class="card-header">
         <h3 class="card-title">📦 Data Penawaran</h3>
-        <div class="card-tools">
+        <!-- <div class="card-tools">
             <a href="{{ route('penawaran.create') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> Tambah Data
             </a>
-        </div>
+        </div> -->
     </div>
 
     <div class="card-body">
@@ -46,6 +46,7 @@
                         <th>Tanggal</th>
                         <th>Status / QR</th>
                         <th>Approve</th>
+                        <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -115,6 +116,88 @@
 
 
     {{-- AKSI: Word / PDF / Upload --}}
+   <td class="text-center">
+
+    {{-- WORD --}}
+    @if ($item->approved_word)
+        <a href="{{ asset('storage/' . $item->approved_word) }}"
+           class="btn btn-sm btn-success mb-1"
+           target="_blank">
+            <i class="fas fa-file-word"></i> Word Approved
+        </a>
+    @elseif ($item->surat)
+        <a href="{{ asset('storage/' . $item->surat) }}"
+           class="btn btn-sm btn-primary mb-1"
+           target="_blank">
+            <i class="fas fa-file-word"></i> Word
+        </a>
+    @endif
+
+    {{-- PDF --}}
+    @if ($item->pdf)
+        <a href="{{ asset('storage/' . $item->pdf) }}"
+           class="btn btn-sm btn-success mb-1"
+           target="_blank">
+            <i class="fas fa-file-pdf"></i> PDF
+        </a>
+    @endif
+
+    {{-- EDIT (HANYA DRAFT) --}}
+    @if (!$item->barcode && $item->status !== 'revision')
+        <a href="{{ route('penawaran.edit', $item->id) }}"
+           class="btn btn-sm btn-primary mb-1">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+    @endif
+
+    {{-- AJUKAN REVISI (HANYA SUDAH APPROVE) --}}
+    @if ($item->barcode)
+        <button class="btn btn-sm btn-danger mb-1"
+                data-toggle="modal"
+                data-target="#revisiModal{{ $item->id }}">
+            <i class="fas fa-undo"></i> Revisi
+        </button>
+    @endif
+
+    {{-- UPLOAD ULANG (DRAFT / REVISI) --}}
+    @if (in_array($item->status, ['draft', 'revision']))
+        <a href="{{ route('penawaran.upload', $item->id) }}"
+           class="btn btn-sm btn-warning mb-1">
+            <i class="fas fa-upload"></i> Upload Ulang
+        </a>
+    @endif
+
+</td>
+
+    </td>
+    
+</tr>
+@endforeach
+                </tbody>
+            </table>
+            @foreach ($data as $item)
+<div class="modal fade" id="revisiModal{{ $item->id }}">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ route('penawaran.revisi', $item->id) }}">
+            @csrf
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>Ajukan Revisi</h5>
+                </div>
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Alasan Revisi</label>
+                        <textarea name="revision_note"
+                                  class="form-control"
+                                  required
+                                  placeholder="Contoh: perubahan harga, typo, dsb"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-danger">Ajukan Revisi</button>
+                </div>
             </div>
         </form>
     </div>

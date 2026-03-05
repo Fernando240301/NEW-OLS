@@ -44,6 +44,24 @@ class PenawaranController extends Controller
 
     return view('penawaran.index', compact('data'));
 }
+ public function verifikasiIndex()
+{
+    $data = Penawaran::with(['jenis', 'client', 'SysUser', 'picMitUser', 'approver'])
+        ->get()
+        ->map(function ($item) {
+
+            $wordPath = storage_path('app/public/' . $item->surat);
+            $item->can_approve = false;
+
+            if ($item->surat && file_exists($wordPath)) {
+                $item->can_approve = $this->wordHasPlaceholder($wordPath, '${QR_TTD}');
+            }
+
+            return $item;
+        });
+
+    return view('verifikasi.penawaran.index', compact('data'));
+}
 
     
     public function create()

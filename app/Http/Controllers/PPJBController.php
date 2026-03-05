@@ -5,9 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\PPJB;
 use App\Models\PPJBApproval;
 use App\Models\JenisPeralatan;
-use app\Models\PPJBDetail;
+use App\Models\PPJBDetail;  
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 use Carbon\Carbon;
@@ -42,22 +43,27 @@ class PPJBController extends Controller
 
     // Buat PPJB baru
     $ppjb = PPJB::create([
-        'nosurat' => $this->generateNoSurat(),
-        'dari' => $request->dari,
-        'tanggal_permohonan' => $request->tanggal_permohonan,
-        'tanggal_dibutuhkan' => $request->tanggal_dibutuhkan,
-        'project' => $request->project,
-        'pekerjaan' => $request->pekerjaan,
-        'PIC' => $request->PIC,
-        'lokasi_project' => $request->lokasi_project,
-        'transport' => $request->transport,
-    ]);
+    'nosurat' => $this->generateNoSurat(),
+    'dari' => $request->dari,
+    'tanggal_permohonan' => $request->tanggal_permohonan,
+    'tanggal_dibutuhkan' => $request->tanggal_dibutuhkan,
+    'project' => $request->project,
+    'pekerjaan' => $request->pekerjaan,
+    'PIC' => $request->PIC,
+    'lokasi_project' => $request->lokasi_project,
+    'transport' => $request->transport,
+
+    // ✅ TAMBAHKAN INI
+    'status' => 'MENUNGGU APPROVAL LEVEL ',
+    'approval_level' => 1,
+]);
+
 
     // Set approvers (hardcoded contoh)
     $approvers = [
-        1 => 100201, // Manager UserID
-        2 => 100305, // QA UserID
-        3 => 100001, // Direktur UserID
+        1 => 100227, // Manager UserID (pak rony)
+        3 => 100261, // Direktur UserID(mas alby)
+        4 => 100219, // Direktur Utama (pak nuzul)
     ];
 
     foreach ($approvers as $level => $userId) {
@@ -82,21 +88,34 @@ class PPJBController extends Controller
         return view('ppjb.edit', compact('item', 'jenis'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'klient' => 'required|string|max:255',
-            'id_peralatan' => 'required|exists:jenis_peralatan,id',
-            'catatan' => 'required|string',
-        ]);
+   public function update(Request $request, $id)
+{
+    $item = PPJB::findOrFail($id);
 
-        $item = PPJB::findOrFail($id);
-        $item->update($request->all());
+    $item->update($request->except('details'));
 
-        return redirect()->route('ppjb.index')
-            ->with('success', 'PPJB berhasil diperbarui');
+    // Hapus detail lama
+    PPJBDetail::where('ppjb_id', $item->id)->delete();
+
+    // Simpan ulang detail
+    if ($request->details) {
+        foreach ($request->details as $detail) {
+            PPJBDetail::create([
+                'ppjb_id' => $item->id,
+                'qty' => $detail['qty'],
+                'satuan' => $detail['satuan'],
+                'uraian' => $detail['uraian'],
+                'harga' => $detail['harga'],
+                'total' => $detail['qty'] * $detail['harga'],
+                'keterangan' => $detail['keterangan'],
+            ]);
+        }
     }
+
+    return redirect()->route('ppjb.index')
+        ->with('success', 'PPJB berhasil diperbarui');
+}
+
 
     public function destroy($id)
     {
@@ -127,44 +146,50 @@ class PPJBController extends Controller
     }
     
     public function preview($id)
-    {
-        $ppjb = PPJB::findOrFail($id);
+{
+    $ppjb = PPJB::with([
+        'details',
+        'approvals.user'
+    ])->findOrFail($id);
 
-        $pdf = Pdf::loadView('ppjb.pdf', compact('ppjb'))
-            ->setPaper('A4', 'portrait');
+    return view('ppjb.pdf', compact('ppjb'));
+}
 
-        // tampil di browser (preview)
-        return $pdf->stream('PPJB-'.$ppjb->nosurat.'.pdf');
-    }
 public function approve($id)
 {
-    $ppjb = PPJB::with('approvals')->findOrFail($id);
+    $ppjb = PPJB::with(['details','approvals.user'])->findOrFail($id);
+    $approval = $ppjb->approvals()
+        ->where('user_id', auth()->user()->userid)
+        ->where('is_approved', false)
+        ->first();
 
-    Gate::authorize('approve-ppjb', $ppjb);
-
-    $approval = $ppjb->currentApproval();
+    if (!$approval) {
+        return back()->with('error', 'Tidak ada approval untuk user ini');
+    }
 
     $approval->update([
         'is_approved' => true,
         'approved_at' => now()
     ]);
 
-    // cek next level
+    // Cek next approval
     $next = $ppjb->approvals()
         ->where('is_approved', false)
         ->orderBy('level')
         ->first();
 
     if ($next) {
+
         $ppjb->update([
             'approval_level' => $next->level,
-            'status' => 'MENUNGGU APPROVAL LEVEL ' . $next->level
+            'status_ppjb' => 'MENUNGGU APPROVAL LEVEL ' . $next->level,
         ]);
+
     } else {
+
         $ppjb->update([
-            'status' => 'APPROVED FINAL',
-            'approved_at' => now(),
-            'approved_by' => Auth::user()->userid
+            'status_ppjb' => 'APPROVED FINAL',
+            'approval_level' => 0
         ]);
     }
 
@@ -183,6 +208,12 @@ public function reject(Request $request, $id)
 
     return back()->with('error', 'PPJB ditolak');
 }
+ public function verifikasiIndex()
+{
+    $data = PPJB::with(['jenis', 'client', 'SysUser','Approvals'])->get();
+    return view('verifikasi.ppjb.index', compact('data'));
+}
+
 
 
 }

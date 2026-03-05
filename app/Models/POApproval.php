@@ -2,27 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
-class PPJBApproval extends Model
+use App\Models\SysUser;
+class POApproval extends Model
 {
-    use HasFactory;
-
-    // Ganti sesuai nama tabel sebenarnya
-    protected $table = 'ppjb_approvals'; 
-
+    protected $table = 'po_approvals';
     protected $fillable = [
-        'ppjb_id',
+        'po_id',
         'user_id',
         'level',
         'is_approved',
         'approved_at'
     ];
 
-    public $timestamps = true; // kalau ada created_at & updated_at
     public function user()
 {
     return $this->belongsTo(SysUser::class, 'user_id', 'userid');
 }
+
+    public function po()
+    {
+        return $this->belongsTo(DaftarPO::class, 'po_id');
+    }
 }
+

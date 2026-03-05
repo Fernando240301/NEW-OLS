@@ -1,11 +1,11 @@
 @extends('adminlte::page')
 
-@section('title', 'Data PPJB')
+@section('title', 'VERIFIKASI PPJB')
 
 @section('plugins.Datatables', true)
 
 @section('content_header')
-    <h1>Data PPJB</h1>
+    <h1>VERIFKASI PPJB</h1>
 @endsection
 
 @section('content')
@@ -13,9 +13,9 @@
     <div class="card-header">
         <h3 class="card-title">📦 Data PPJB</h3>
         <div class="card-tools">
-            <a href="{{ route('ppjb.create') }}" class="btn btn-primary btn-sm">
+            <!-- <a href="{{ route('ppjb.create') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> Tambah Data
-            </a>
+            </a> -->
         </div>
     </div>
 
