@@ -2,6 +2,11 @@
 
 @section('title', 'Project List')
 
+@section('css')
+    <link rel="stylesheet" href="{{ asset('css/adminlte-custom.css') }}">
+@endsection
+
+
 @section('plugins.Datatables', true)
 
 @section('plugins.Select2', true)
@@ -40,10 +45,9 @@
                     @foreach ($data as $row)
                         <tr>
                             <td class="aksi-cell">
-                                    <a href="{{ route('project_list.detail', $row->workflowid) }}"
-                                        class="btn btn-primary">
-                                        Detail
-                                    </a>
+                                <a href="{{ route('project_list.detail', $row->workflowid) }}" class="btn btn-primary">
+                                    Detail
+                                </a>
                             </td>
                             <td>{{ $row->project_number }}</td>
                             <td>{{ $row->projectname }}</td>

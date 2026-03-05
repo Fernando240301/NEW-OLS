@@ -1,0 +1,15 @@
+/* FORCE putih untuk AdminLTE */
+body,
+.wrapper,
+.content-wrapper,
+.content,
+.content-header {
+    background-color: #ffffff !important;
+}
+
+/* Hilangkan abu-abu halus */
+.bg-light,
+.bg-gray,
+.bg-gray-light {
+    background-color: #ffffff !important;
+}

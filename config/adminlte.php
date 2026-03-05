@@ -348,30 +348,12 @@ return [
         ],
         [
             'text' => 'Verifikasi',
-            'icon' => 'fas fa-fw fa-check-circle',
+            'icon' => 'fas fa-file-signature',
             'submenu' => [
                 [
                     'text' => 'Verifikasi WA',
                     'route' => 'verifikasi.work_assignment', // ⬅️ PAKAI NAME ROUTE
                 ],
-                [
-                    'text' => 'Verifikasi Penawaran',
-                    'route' => 'verifikasi.penawaran', // ⬅️ PAKAI NAME ROUTE
-                ],
-                [
-                    'text' => 'Verifikasi PPJB',
-                    'route' => 'verifikasi.ppjb', // ⬅️ PAKAI NAME ROUTE
-                ],
-                [
-                    'text' => 'Verifikasi P.O',
-                    'route' => 'verifikasi.daftarpo', // ⬅️ PAKAI NAME ROUTE
-                ],
-                [
-                    'text' => 'Verifikasi Daily Activity',
-                    'route' => 'verifikasi.activity', // ⬅️ PAKAI NAME ROUTE
-                ],
-
-                
             ],
         ],
         [
@@ -393,26 +375,21 @@ return [
             ],
         ],
         [
-    'text' => 'Operation',
-    'icon' => 'fas fa-fw fa-cogs',
-    'submenu' => [
-        [
-            'text' => 'Project List',
-            'url'  => '/project-list',
-        ],
-    ],
-],
-        [
+<<<<<<< HEAD
+            'text' => 'Operation',
+            'icon' => 'fas fa-fw fa-cogs',
+            'submenu' => [
+                [
+                    'text' => 'Project List',
+                    'url'  => '/project-list',
+=======
             'text' => 'Finance',
             'icon' => 'fas fa-receipt',
             'submenu' => [
                 [
                     'text' => 'PPJB',
-                    'route' => 'ppjb.index',
-                ],
-                [
-                    'text' => 'DAFTAR P.O',
-                    'route' => 'daftarpo.index',
+                    'route' => 'ppjb.index', // ⬅️ PAKAI NAME ROUTE
+>>>>>>> d9f2faf (revisi prospect)
                 ],
             ],
         ],
@@ -441,6 +418,86 @@ return [
                 [
                     'text' => 'Jenis Layanan',
                     'url' => '/jenis-layanan',
+                ],
+            ],
+        ],
+        [
+            'text' => 'Finance (New)',
+            'icon' => 'fas fa-fw fa-file-invoice-dollar',
+            'submenu' => [
+                [
+                    'text' => 'PPJB',
+                    'icon' => 'fas fa-file-contract',
+                    'submenu' => [
+                        [
+                            'text' => 'List PPJB',
+                            'route' => 'ppjb-new.index',
+                            'icon' => 'fas fa-list'
+                        ],
+                        [
+                            'text' => 'Buat PPJB',
+                            'route' => 'ppjb-new.create',
+                            'icon' => 'fas fa-plus'
+                        ],
+                    ]
+                ],
+                [
+                    'text' => 'Transaction',
+                    'submenu' => [
+                        [
+                            'text' => 'Manual Journal',
+                            'route' => 'journals.index',
+                            'icon' => 'fas fa-book-open',
+                        ],
+                    ],
+                ],
+                [
+                    'text' => 'Reports',
+                    'submenu' => [
+                        [
+                            'text' => 'Trial Balance',
+                            'route' => 'trial.balance',
+                            'icon' => 'fas fa-balance-scale',
+                        ],
+                        [
+                            'text' => 'General Ledger',
+                            'route' => 'general.ledger',
+                            'icon' => 'fas fa-book',
+                        ],
+                        [
+                            'text' => 'Income Statement',
+                            'route' => 'income.statement',
+                            'icon' => 'fas fa-chart-line',
+                        ],
+                        [
+                            'text' => 'Balance Sheet',
+                            'route' => 'balance.sheet',
+                            'icon' => 'fas fa-landmark',
+                        ],
+                        [
+                            'text' => 'Accounting Period',
+                            'route' => 'period.index',
+                            'icon' => 'fas fa-lock',
+                        ],
+                    ],
+                ],
+                [
+                    'text' => 'Master Data',
+                    'submenu' => [
+                        [
+                            'text' => 'Chart of Accounts',
+                            'route' => 'chart-of-accounts.index',
+                            'icon' => 'fas fa-sitemap',
+                        ],
+                        [
+                            'text' => 'Account Type',
+                            'route'  => 'account-types.index',
+                        ],
+                        [
+                            'text' => 'Account Category',
+                            'route' => 'account-categories.index',
+                        ],
+                    ],
                 ],
             ],
         ],

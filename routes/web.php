@@ -12,7 +12,6 @@ use App\Http\Controllers\OperationController;
 use App\Http\Controllers\ProspectController;
 use App\Http\Controllers\PenawaranController;
 use App\Http\Controllers\PPJBController;
-use App\Http\Controllers\DaftarPOController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DailyActivityController;
 use Illuminate\Support\Facades\Auth;
@@ -168,10 +167,75 @@ Route::middleware('auth')->group(function () {
     Route::get('/project-list/scope/get', [OperationController::class, 'getScope'])->name('project_list.scope.get');
     Route::get('/kontrak/view/{filename}', [OperationController::class, 'viewKontrak'])->where('filename', '.*')->name('kontrak.view');
     Route::post('/project-list/file/upload', [OperationController::class, 'uploadMarketingFile'])->name('project_list.file.upload');
-    
+
+    //Surat Instruksi Kerja
+    Route::get('/project-list/{id}/sik', [OperationController::class, 'sik'])->name('project_list.sik');
+    Route::get('/project-list/{id}/createsik', [OperationController::class, 'createsik'])->name('sik.create');
+    Route::post('/project-list/storesik', [OperationController::class, 'storesik'])->name('sik.store');
+    Route::get('/sik/get-leader-data/{workflowid}/{userid}', [OperationController::class, 'getLeaderData']);
+    Route::get('/sik/preview/{id}', [OperationController::class, 'previewSik'])->name('sik.show');
+
+
+    Route::get('/project/{projectId}/sik/{id}/edit', [OperationController::class, 'editsik'])->name('sik.edit');
+    Route::put('/project/{projectId}/sik/{id}', [OperationController::class, 'updatesik'])->name('sik.update');
+    Route::delete('/project/{projectId}/sik/{id}', [OperationController::class, 'deletesik'])->name('sik.delete');
+
+    Route::get('/project-list/{projectId}/sik/{id}/extend', [OperationController::class, 'extendsik'])->name('sik.extend');
+    Route::post('/project-list/{projectId}/sik/{id}/extend', [OperationController::class, 'storeExtend'])->name('sik.storeExtend');
+
+    //Documents
+    Route::get('/documents/{workflow}/{folder?}', [DocumentController::class, 'documents'])->name('documents.index');
+    Route::post('/documents/upload', [DocumentController::class, 'upload'])->name('documents.upload');
+    Route::post('/documents/folder', [DocumentController::class, 'createFolder'])->name('documents.folder');
+    Route::delete('/documents/{id}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::post('/documents/rename/{id}', [DocumentController::class, 'rename'])->name('documents.rename');
+    // ✅ TARUH INI PALING ATAS
+    Route::get('/documents/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::get('/documents/{workflowid}/{folderId?}', [DocumentController::class, 'documents'])->name('documents.index');
+});
+
+// Finance (New)
+Route::middleware('auth')->group(function () {
+    Route::resource('account-types', AccountTypeController::class);
+    Route::resource('account-categories', AccountCategoryController::class);
+    Route::resource('chart-of-accounts', ChartOfAccountController::class)->middleware('auth');
+    Route::post('/chart-of-accounts/import', [ChartOfAccountController::class, 'import'])->name('chart-of-accounts.import');
+    Route::get('chart-of-accounts/generate-code/{parentId}', [ChartOfAccountController::class, 'generateNextCode'])->name('chart-of-accounts.generate-code');
+
+    Route::prefix('finance')->group(function () {
+        Route::resource('journals', JournalController::class);
+        Route::post('journals/{journal}/post', [JournalController::class, 'post'])->name('journals.post');
+        Route::post('journals/{journal}/reverse', [JournalController::class, 'reverse'])->name('journals.reverse');
+        Route::post('ppjb-new/{id}/approve', [PpjbnewController::class, 'approve'])->name('ppjb-new.approve');
+        Route::post('/ppjb-new/{id}/revise', [PpjbnewController::class, 'revise'])->name('ppjb-new.revise');
+        Route::get('/ppjb/{id}/pdf', [PpjbnewController::class, 'pdf'])->name('ppjb-new.pdf');
+        Route::get('/lpjb/create/{ppjb}', [LpjbController::class, 'create'])->name('lpjb.create');
+        Route::post('/lpjb/store/{ppjb}', [LpjbController::class, 'store'])->name('lpjb.store');
+        Route::get('/lpjb/{id}', [LpjbController::class, 'show'])->name('lpjb.show');
+        Route::get('/lpjb/{id}/edit', [LpjbController::class, 'edit'])->name('lpjb.edit');
+        Route::put('/lpjb/{id}', [LpjbController::class, 'update'])->name('lpjb.update');
+        Route::post('/lpjb/{id}/approve', [LpjbController::class, 'approve'])->name('lpjb.approve');
+        Route::post('/lpjb/{id}/revise', [LpjbController::class, 'revise'])->name('lpjb.revise');
+        Route::get('/lpjb/{id}/pdf', [LpjbController::class, 'pdf'])->name('lpjb.pdf');
+    });
+
+    Route::get('/trial-balance', [TrialBalanceController::class, 'index'])->name('trial.balance');
+    Route::get('/general-ledger', [GeneralLedgerController::class, 'index'])->name('general.ledger');
+    Route::get('/income-statement', [IncomeStatementController::class, 'index'])->name('income.statement');
+    Route::get('/balance-sheet', [BalanceSheetController::class, 'index'])->name('balance.sheet');
+    Route::get('/periods', [PeriodController::class, 'index'])->name('period.index');
+    Route::post('/periods/{period}/close', [PeriodController::class, 'close'])->name('period.close');
+    Route::get('/periods/{period}', [PeriodController::class, 'show'])->name('period.show');
+
+    // PPJB
+    Route::resource('ppjb-new', PpjbnewController::class);
 });
 
 
+
+
+
+// DAFIT
 // Route::get('/typeperalatan/create', [TypePeralatanController::class, 'create'])->name('typeperalatan.create');
 // Route::post('/typeperalatan', [TypePeralatanController::class, 'store'])->name('typeperalatan.store');
 
@@ -239,9 +303,10 @@ Route::middleware('auth')->group(function () {
 
     // APPROVE 
     Route::post('/penawaran/{id}/approve', [PenawaranController::class, 'approve'])
-    ->name('penawaran.approve');
-    Route::post('/penawaran/{id}/revisi', 
-    [App\Http\Controllers\PenawaranController::class, 'revisi']
+        ->name('penawaran.approve');
+    Route::post(
+        '/penawaran/{id}/revisi',
+        [App\Http\Controllers\PenawaranController::class, 'revisi']
     )->name('penawaran.revisi');
 
     //Add/Edit/Delete PPJB
@@ -260,12 +325,8 @@ Route::middleware('auth')->group(function () {
     ->name('ppjb.reject');
 
 
-Route::get('/verifikasi/penawaran', [PenawaranController::class, 'verifikasiIndex'])->name('verifikasi.penawaran');
-Route::post('/penawaran/{id}/approve', [PenawaranController::class, 'approve'])
-    ->name('penawaran.approve');
-Route::post('/penawaran/{id}/revisi', 
-    [App\Http\Controllers\PenawaranController::class, 'revisi']
-    )->name('penawaran.revisi');
+
+});
 
 });
 Route::get('/verifikasi/ppjb', [PPJBController::class, 'verifikasiIndex'])->name('verifikasi.ppjb');
