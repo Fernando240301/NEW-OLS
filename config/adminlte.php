@@ -378,16 +378,16 @@ return [
                 ],
             ],
         ],
-        [
-            'text' => 'Finance',
-            'icon' => 'fas fa-receipt',
-            'submenu' => [
-                [
-                    'text' => 'PPJB',
-                    'route' => 'ppjb.index',
-                ],
-            ],
-        ],
+        // [
+        //     'text' => 'Finance',
+        //     'icon' => 'fas fa-receipt',
+        //     'submenu' => [
+        //         [
+        //             'text' => 'PPJB',
+        //             'route' => 'ppjb.index',
+        //         ],
+        //     ],
+        // ],
         [
             'text' => 'Client',
             'url' => 'client',
@@ -413,6 +413,21 @@ return [
                     'text' => 'Jenis Layanan',
                     'url' => '/jenis-layanan',
                 ],
+                [
+                    'text' => 'Users',
+                    'route' => 'users.index',
+                    'icon' => 'fas fa-users'
+                ],
+                [
+                    'text' => 'Menus',
+                    'route' => 'menus.index',
+                    'icon' => 'fas fa-bars',
+                ],
+                [
+                    'text' => 'Roles',
+                    'route' => 'roles.index',
+                    'icon' => 'fas fa-user-shield',
+                ],
             ],
         ],
         [
@@ -435,6 +450,13 @@ return [
                         ],
                     ]
                 ],
+
+                [
+                    'text' => 'Pajak MIGAS',
+                    'icon' => 'fas fa-file-invoice',
+                    'route' => 'pajak.migas'
+                ],
+
                 [
                     'text' => 'Transaction',
                     'submenu' => [

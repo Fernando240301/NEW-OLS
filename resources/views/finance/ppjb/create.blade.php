@@ -46,6 +46,7 @@
                         <select name="jenis_pengajuan" id="jenis_pengajuan" class="form-control" required>
                             <option value="">-- Pilih --</option>
                             <option value="project">Project</option>
+                            <option value="project_migas">Project (untuk MIGAS)</option>
                             <option value="non_project">Non Project</option>
                         </select>
                     </div>
@@ -64,16 +65,31 @@
                                     <option value="{{ $project['workflowid'] }}"
                                         data-noproject="{{ $project['no_project'] }}"
                                         data-start="{{ $project['date_start'] }}" data-end="{{ $project['date_end'] }}">
+
                                         {{ $project['no_sik'] }}
                                         @if ($project['extend'])
                                             (Extend)
                                         @endif
                                         | {{ $project['client'] }}
                                         | {{ $project['location'] }}
+
                                     </option>
                                 @endforeach
 
                             </select>
+
+                            <script id="migasOptions" type="text/template">
+                                
+                                @foreach ($migas as $p)
+                                <option value="{{ $p['workflowid'] }}"
+                                data-noproject="{{ $p['project_number'] }}">
+                                
+                                {{ $p['project_number'] }} | {{ $p['project_name'] }} | {{ $p['client'] }}
+                                
+                                </option>
+                                @endforeach
+                                
+                                </script>
                         </div>
                     </div>
                 </div>
@@ -394,9 +410,43 @@
                 $('#projectSection').slideDown();
                 $('#projectInfoSection').slideDown();
 
+                $('label:contains("Pilih Project")').text('Pilih Project (SIK)');
+
+                $('#projectSelect').html(`
+<option value="">-- Pilih Project --</option>
+{!! collect($projects)->map(function ($p) {
+        return "<option value='{$p['workflowid']}'
+data-noproject='{$p['no_project']}'
+data-start='{$p['date_start']}'
+data-end='{$p['date_end']}'>
+{$p['no_sik']} | {$p['client']} | {$p['location']}
+</option>";
+    })->implode('') !!}
+`);
+
+                $('#projectSelect').trigger('change.select2');
+
                 $('#tanggal_display')
                     .attr('type', 'text')
                     .prop('readonly', true)
+                    .val('');
+
+            } else if (val === 'project_migas') {
+
+                $('#projectSection').slideDown();
+                $('#projectInfoSection').slideDown();
+
+                $('label:contains("Pilih Project")').text('Pilih Project (PR)');
+
+                $('#projectSelect').html(`
+<option value="">-- Pilih Project MIGAS --</option>
+` + $('#migasOptions').html());
+
+                $('#projectSelect').trigger('change.select2');
+
+                $('#tanggal_display')
+                    .attr('type', 'date')
+                    .prop('readonly', false)
                     .val('');
 
             } else {
@@ -414,6 +464,7 @@
 
             $('#tanggal_mulai').val('');
             $('#tanggal_selesai').val('');
+
         });
 
         $('#tanggal_display').on('change', function() {

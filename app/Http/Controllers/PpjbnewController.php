@@ -31,14 +31,17 @@ class PpjbnewController extends Controller
             $ppjbs = Ppjbnew::latest()->paginate(15);
         } else {
 
-            $ppjbs = Ppjbnew::where(function ($q) use ($user, $usernameShort) {
+            $ppjbs = Ppjbnew::with('approvals')
+                ->where(function ($q) use ($user, $usernameShort) {
 
-                $q->where('pic', 'like', '%' . $usernameShort . '%')
+                    $q->where('created_by', $user->userid)
 
-                    ->orWhereHas('approvals', function ($a) use ($user) {
-                        $a->where('user_id', $user->userid);
-                    });
-            })
+                        ->orWhere('pic', 'like', '%' . $usernameShort . '%')
+
+                        ->orWhereHas('approvals', function ($a) use ($user) {
+                            $a->where('user_id', $user->userid);
+                        });
+                })
                 ->latest()
                 ->paginate(15);
         }
@@ -77,6 +80,32 @@ class PpjbnewController extends Controller
             )
             ->get();
 
+        $migasProjects = DB::table('app_workflow as pr')
+            ->leftJoin('pemohon as p', 'pr.client', '=', 'p.pemohonid')
+            ->where('pr.processname', 'verifikasi_permohonan')
+            ->orderByDesc('pr.workflowid')
+            ->select(
+                'pr.workflowid',
+                'pr.workflowdata',
+                'pr.projectname',
+                'p.nama_perusahaan as client'
+            )
+            ->get();
+
+        $migas = [];
+
+        foreach ($migasProjects as $wf) {
+
+            $data = json_decode($wf->workflowdata, true);
+
+            $migas[] = [
+                'workflowid' => $wf->workflowid,
+                'project_number' => $data['project_number'] ?? '-',
+                'project_name' => $wf->projectname ?? '-',
+                'client' => $wf->client ?? '-'
+            ];
+        }
+
         $projects = [];
 
         foreach ($workflows as $wf) {
@@ -109,7 +138,7 @@ class PpjbnewController extends Controller
             }
         }
 
-        return view('finance.ppjb.create', compact('coas', 'user', 'projects'));
+        return view('finance.ppjb.create', compact('coas', 'user', 'projects', 'migas'));
     }
 
     public function store(Request $request)
@@ -117,12 +146,12 @@ class PpjbnewController extends Controller
         $request->validate([
             'kepada'              => 'required|string',
             'dari'                => 'required|string',
-            'jenis_pengajuan'     => 'required|in:project,non_project',
+            'jenis_pengajuan' => 'required|in:project,project_migas,non_project',
             'tanggal_permohonan'  => 'required|date',
             'details'             => 'required|array|min:1',
 
             // wajib pilih SIK jika project
-            'workflow_id' => 'required_if:jenis_pengajuan,project|nullable|exists:app_workflow,workflowid',
+            'workflow_id' => 'required_if:jenis_pengajuan,project,project_migas|nullable|exists:app_workflow,workflowid',
 
             // tanggal wajib ada
             'tanggal_mulai' => 'required|date',
@@ -133,12 +162,17 @@ class PpjbnewController extends Controller
             $ppjb = Ppjbnew::create([
                 'no_ppjb' => $this->generateNoPpjb(),
 
+                'created_by' => Auth::user()->userid,
+
                 // 🔥 core info
                 'jenis_pengajuan' => $request->jenis_pengajuan,
                 'workflow_id' => $request->jenis_pengajuan === 'project'
                     ? $request->workflow_id
                     : null,
-                'pr_workflow_id' => null,
+
+                'pr_workflow_id' => $request->jenis_pengajuan === 'project_migas'
+                    ? $request->workflow_id
+                    : null,
 
                 'kepada' => $request->kepada,
                 'dari' => $request->dari,
@@ -149,7 +183,10 @@ class PpjbnewController extends Controller
 
                 'pekerjaan' => $request->pekerjaan,
                 'pic' => $request->pic_special ?? Auth::user()->fullname,
-                'kas_account_id' => $this->getCaAccountId($request->dari),
+                'kas_account_id' => $this->getCaAccountId(
+                    $request->dari,
+                    $request->jenis_pengajuan
+                ),
                 'status' => 'draft'
             ]);
 
@@ -208,13 +245,37 @@ class PpjbnewController extends Controller
         return $prefix . $next;
     }
 
-    private function getCaAccountId($dari)
+    private function getCaAccountId($dari, $jenisPengajuan = null)
     {
         $dari = strtolower(trim($dari));
 
-        if (str_contains($dari, 'operasional')) {
-            $code = '1112-001';
-        } else {
+        /*
+    ===============================
+    PROJECT (SIK)
+    ===============================
+    */
+        if ($jenisPengajuan === 'project') {
+            $code = '1112-001'; // CA Inspektor
+        }
+
+        /*
+    ===============================
+    NON PROJECT
+    ===============================
+    */ elseif ($jenisPengajuan === 'non_project') {
+
+            if (str_contains($dari, 'operasional')) {
+                $code = '1112-002'; // CA Operasional
+            } else {
+                $code = '1112-003'; // CA Lain-lain
+            }
+        }
+
+        /*
+    ===============================
+    DEFAULT
+    ===============================
+    */ else {
             $code = '1112-003';
         }
 
@@ -243,7 +304,7 @@ class PpjbnewController extends Controller
         */
             if ($ppjb->status === 'draft') {
 
-                if (!str_contains(strtolower($ppjb->pic), strtolower($usernameShort))) {
+                if ($ppjb->created_by != $user->userid) {
                     throw new \Exception("Anda bukan PIC untuk PPJB ini.");
                 }
 
@@ -359,18 +420,42 @@ class PpjbnewController extends Controller
                     'status'         => 'draft'
                 ]);
 
-                // Debit Cash Advance
-                JournalDetail::create([
-                    'journal_id' => $journal->id,
-                    'account_id' => $ppjb->kas_account_id,
-                    'debit'      => $ppjb->total,
-                    'credit'     => 0,
-                    'project_id' => null,
-                    'memo'       => 'Cash Advance PPJB ' . $ppjb->no_ppjb
-                ]);
+                /*
+=========================================
+PROJECT MIGAS → DIRECT EXPENSE
+=========================================
+*/
+                if ($ppjb->jenis_pengajuan === 'project_migas') {
+
+                    foreach ($ppjb->details as $detail) {
+
+                        $subtotal = $detail->qty * $detail->harga;
+
+                        JournalDetail::create([
+                            'journal_id' => $journal->id,
+                            'account_id' => $detail->coa_id,
+                            'debit'      => $subtotal,
+                            'credit'     => 0,
+                            'project_id' => $ppjb->pr_workflow_id,
+                            'memo'       => 'Biaya Project MIGAS ' . $ppjb->no_ppjb
+                        ]);
+                    }
+                } else {
+
+                    // Debit Cash Advance
+                    JournalDetail::create([
+                        'journal_id' => $journal->id,
+                        'account_id' => $ppjb->kas_account_id,
+                        'debit'      => $ppjb->total,
+                        'credit'     => 0,
+                        'project_id' => null,
+                        'memo'       => 'Cash Advance PPJB ' . $ppjb->no_ppjb
+                    ]);
+                }
 
                 // Credit Kas
                 $kas = ChartOfAccount::where('code', '1101-002')->first();
+
                 if (!$kas) {
                     throw new \Exception("COA 1101-002 tidak ditemukan.");
                 }
@@ -380,7 +465,12 @@ class PpjbnewController extends Controller
                     'account_id' => $kas->id,
                     'debit'      => 0,
                     'credit'     => $ppjb->total,
-                    'project_id' => null,
+
+                    // MIGAS tetap membawa project
+                    'project_id' => $ppjb->jenis_pengajuan === 'project_migas'
+                        ? $ppjb->pr_workflow_id
+                        : null,
+
                     'memo'       => 'Cash keluar PPJB ' . $ppjb->no_ppjb
                 ]);
 
@@ -513,7 +603,7 @@ class PpjbnewController extends Controller
         $request->validate([
             'kepada'              => 'required|string',
             'dari'                => 'required|string',
-            'jenis_pengajuan'     => 'required|in:project,non_project',
+            'jenis_pengajuan'     => 'required|in:project,project_migas,non_project',
             'tanggal_permohonan'  => 'required|date',
             'details'             => 'required|array|min:1',
             'workflow_id' => 'required_if:jenis_pengajuan,project|nullable|exists:app_workflow,workflowid',
@@ -535,6 +625,10 @@ class PpjbnewController extends Controller
                     ? $request->workflow_id
                     : null,
 
+                'pr_workflow_id' => $request->jenis_pengajuan === 'project_migas'
+                    ? $request->workflow_id
+                    : null,
+
                 'kepada' => $request->kepada,
                 'dari' => $request->dari,
 
@@ -544,7 +638,10 @@ class PpjbnewController extends Controller
 
                 'pekerjaan' => $request->pekerjaan,
                 'pic' => $request->pic,
-                'kas_account_id' => $this->getCaAccountId($request->dari),
+                'kas_account_id' => $this->getCaAccountId(
+                    $request->dari,
+                    $request->jenis_pengajuan
+                ),
             ]);
 
             // 🔥 Hapus detail lama
@@ -658,8 +755,10 @@ class PpjbnewController extends Controller
         $tanggalPermohonan = Carbon::parse($ppjb->tanggal_permohonan)
             ->translatedFormat('d F Y');
 
-        $tanggalDibutuhkan = Carbon::parse($ppjb->tanggal_dibutuhkan)
-            ->translatedFormat('d F Y');
+        $tanggalDibutuhkan =
+            Carbon::parse($ppjb->tanggal_mulai)->translatedFormat('d F Y')
+            . ' s.d ' .
+            Carbon::parse($ppjb->tanggal_selesai)->translatedFormat('d F Y');
 
         $pdf = Pdf::loadView(
             'finance.ppjb.pdf',

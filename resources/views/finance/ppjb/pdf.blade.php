@@ -170,24 +170,52 @@
             <td><b>No. Project</b></td>
             <td>:</td>
             <td colspan="4">
+
                 @php
-                    $noProject = null;
 
+                    $noProject = '-';
+                    $projectName = '';
+
+                    /*
+=========================
+PROJECT SIK
+=========================
+*/
                     if ($ppjb->workflow_id) {
-                        $workflow = DB::table('app_workflow')->where('workflowid', $ppjb->workflow_id)->first();
+                        $sik = DB::table('app_workflow')->where('workflowid', $ppjb->workflow_id)->first();
 
-                        if ($workflow) {
-                            $pr = DB::table('app_workflow')->where('workflowid', $workflow->nworkflowid)->first();
+                        if ($sik) {
+                            $pr = DB::table('app_workflow')->where('workflowid', $sik->nworkflowid)->first();
 
                             if ($pr) {
                                 $prData = json_decode($pr->workflowdata, true);
-                                $noProject = $prData['project_number'] ?? ($pr->projectname ?? null);
+
+                                $noProject = $prData['project_number'] ?? '-';
+                                $projectName = $pr->projectname ?? '';
                             }
                         }
                     }
+
+                    /*
+=========================
+PROJECT MIGAS
+=========================
+*/
+                    if ($ppjb->pr_workflow_id) {
+                        $pr = DB::table('app_workflow')->where('workflowid', $ppjb->pr_workflow_id)->first();
+
+                        if ($pr) {
+                            $prData = json_decode($pr->workflowdata, true);
+
+                            $noProject = $prData['project_number'] ?? '-';
+                            $projectName = $pr->projectname ?? '';
+                        }
+                    }
+
                 @endphp
 
-                {{ $noProject. ' | ' . $pr->projectname ?? '-' }}
+                {{ $noProject }} {{ $projectName ? ' | ' . $projectName : '' }}
+
             </td>
         </tr>
 

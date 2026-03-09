@@ -51,7 +51,27 @@
                     <td>{{ $ppjb->pic }}</td>
 
                     {{-- PROJECT NO --}}
-                    <td>{{ $ppjb->project_no ?? '-' }}</td>
+                    @php
+                        $projectNo = '-';
+
+                        if ($ppjb->workflow_id) {
+                            $wf = DB::table('app_workflow')->where('workflowid', $ppjb->workflow_id)->first();
+                            if ($wf) {
+                                $data = json_decode($wf->workflowdata, true);
+                                $projectNo = $data['no_sik'] ?? '-';
+                            }
+                        }
+
+                        if ($ppjb->pr_workflow_id) {
+                            $wf = DB::table('app_workflow')->where('workflowid', $ppjb->pr_workflow_id)->first();
+                            if ($wf) {
+                                $data = json_decode($wf->workflowdata, true);
+                                $projectNo = $data['project_number'] ?? '-';
+                            }
+                        }
+                    @endphp
+
+                    <td>{{ $projectNo }}</td>
 
                     {{-- STATUS PPJB --}}
                     <td class="text-center">
@@ -66,23 +86,43 @@
 
                     {{-- STATUS LPJB --}}
                     <td class="text-center">
-                        @if ($lpjb)
-                            @if ($lpjb->status == 'draft')
-                                <span class="badge bg-secondary">Draft</span>
-                            @elseif($lpjb->status == 'waiting_pcc')
-                                <span class="badge bg-warning">Waiting PCC</span>
-                            @elseif($lpjb->status == 'waiting_manager')
-                                <span class="badge bg-warning">Waiting Manager</span>
-                            @elseif($lpjb->status == 'waiting_finance')
-                                <span class="badge bg-warning">Waiting Finance</span>
-                            @elseif($lpjb->status == 'waiting_director')
-                                <span class="badge bg-warning">Waiting Director</span>
+
+                        {{-- ===============================
+    PPJB MIGAS → DONE
+    =============================== --}}
+                        @if ($ppjb->jenis_pengajuan == 'project_migas')
+                            @if (in_array($ppjb->status, ['approved', 'closed']))
+                                <span class="badge bg-success">Done (Pajak)</span>
                             @else
-                                <span class="badge bg-danger">{{ ucfirst($lpjb->status) }}</span>
+                                <span class="badge bg-secondary">None</span>
                             @endif
+
+
+                            {{-- ===============================
+    PPJB NORMAL → STATUS LPJB
+    =============================== --}}
                         @else
-                            <span class="badge bg-light text-dark">Belum Ada</span>
+                            @if ($lpjb)
+                                @if ($lpjb->status == 'draft')
+                                    <span class="badge bg-secondary">Draft</span>
+                                @elseif($lpjb->status == 'waiting_pcc')
+                                    <span class="badge bg-warning">Waiting PCC</span>
+                                @elseif($lpjb->status == 'waiting_manager')
+                                    <span class="badge bg-warning">Waiting Manager</span>
+                                @elseif($lpjb->status == 'waiting_finance')
+                                    <span class="badge bg-warning">Waiting Finance</span>
+                                @elseif($lpjb->status == 'waiting_director')
+                                    <span class="badge bg-warning">Waiting Director</span>
+                                @elseif($lpjb->status == 'approved')
+                                    <span class="badge bg-success">Done</span>
+                                @else
+                                    <span class="badge bg-danger">{{ ucfirst($lpjb->status) }}</span>
+                                @endif
+                            @else
+                                <span class="badge bg-light text-dark">Belum Ada</span>
+                            @endif
                         @endif
+
                     </td>
 
                     {{-- ===================== --}}
@@ -120,7 +160,7 @@
                         @endif
 
                         {{-- Approve hanya jika dia termasuk PIC --}}
-                        @if ($ppjb->status == 'draft' && str_contains(strtolower($ppjb->pic), strtolower($usernameShort)))
+                        @if ($ppjb->status == 'draft' && $ppjb->created_by == $user->userid)
                             <form action="{{ route('ppjb-new.approve', $ppjb->id) }}" method="POST"
                                 style="display:inline-block" onsubmit="return confirm('Approve PPJB ini?')">
                                 @csrf
@@ -137,50 +177,66 @@
                     {{-- ===================== --}}
                     <td class="text-left">
 
-                        @if ($lpjb)
-                            {{-- Detail --}}
-                            <a href="{{ route('lpjb.pdf', $lpjb->id) }}" target="_blank" class="btn btn-sm btn-info"
-                                title="Detail LPBJ">
-                                <i class="fas fa-eye"></i>
-                            </a>
-
-                            {{-- Edit --}}
-                            @if ($lpjb->status == 'draft')
-                                <a href="{{ route('lpjb.edit', $lpjb->id) }}" class="btn btn-sm btn-primary"
-                                    title="Edit LPBJ">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                            @endif
-
-                            {{-- Approve --}}
-                            @if ($lpjb->status == 'draft')
-                                <form action="{{ route('lpjb.approve', $lpjb->id) }}" method="POST"
-                                    style="display:inline-block" onsubmit="return confirm('Approve LPBJ ini?')">
-                                    @csrf
-                                    <button class="btn btn-sm btn-success" title="Approve LPBJ">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                </form>
-                            @endif
-
-                            {{-- Revisi --}}
-                            @if ($lpjb->status == 'approved')
-                                <form action="{{ route('lpjb.revise', $lpjb->id) }}" method="POST"
-                                    style="display:inline-block" onsubmit="return confirm('Revisi LPBJ ini?')">
-                                    @csrf
-                                    <button class="btn btn-sm btn-warning" title="Revisi LPBJ">
-                                        <i class="fas fa-undo"></i>
-                                    </button>
-                                </form>
-                            @endif
-                        @else
-                            @if ($ppjb->status == 'approved')
-                                <a href="{{ route('lpjb.create', $ppjb->id) }}" class="btn btn-sm btn-secondary"
-                                    title="Buat LPBJ">
-                                    <i class="fas fa-file-invoice"></i>
-                                </a>
+                        {{-- ===============================
+                        PPJB MIGAS → PAJAK
+                        =============================== --}}
+                        @if ($ppjb->jenis_pengajuan == 'project_migas')
+                            @if (in_array($ppjb->status, ['approved', 'closed']))
+                                <span class="badge bg-success">Done (Pajak)</span>
                             @else
-                                <span class="text-muted">-</span>
+                                <span class="badge bg-secondary">None</span>
+                            @endif
+
+
+                            {{-- ===============================
+                        PPJB NORMAL → LPJB
+                        =============================== --}}
+                        @else
+                            @if ($lpjb)
+                                {{-- Detail --}}
+                                <a href="{{ route('lpjb.pdf', $lpjb->id) }}" target="_blank" class="btn btn-sm btn-info"
+                                    title="Detail LPJB">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+
+                                {{-- Edit --}}
+                                @if ($lpjb->status == 'draft')
+                                    <a href="{{ route('lpjb.edit', $lpjb->id) }}" class="btn btn-sm btn-primary"
+                                        title="Edit LPJB">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                @endif
+
+                                {{-- Approve --}}
+                                @if ($lpjb->status == 'draft')
+                                    <form action="{{ route('lpjb.approve', $lpjb->id) }}" method="POST"
+                                        style="display:inline-block" onsubmit="return confirm('Approve LPJB ini?')">
+                                        @csrf
+                                        <button class="btn btn-sm btn-success" title="Approve LPJB">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                @endif
+
+                                {{-- Revisi --}}
+                                @if ($lpjb->status == 'approved')
+                                    <form action="{{ route('lpjb.revise', $lpjb->id) }}" method="POST"
+                                        style="display:inline-block" onsubmit="return confirm('Revisi LPJB ini?')">
+                                        @csrf
+                                        <button class="btn btn-sm btn-warning" title="Revisi LPJB">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                            @else
+                                @if ($ppjb->status == 'approved')
+                                    <a href="{{ route('lpjb.create', $ppjb->id) }}" class="btn btn-sm btn-secondary"
+                                        title="Buat LPJB">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </a>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
                             @endif
                         @endif
 

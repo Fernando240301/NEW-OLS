@@ -421,10 +421,12 @@ class LpjbController extends Controller
             throw new \Exception('Tidak ada periode open.');
         }
 
+        $pic = $lpjb->ppjb->pic;
+
         $journal = Journal::create([
             'journal_no'     => 'JR-' . now()->format('Ym') . '-' . rand(1000, 9999),
             'journal_date'   => now(),
-            'reference_type' => 'LPBJ',
+            'reference_type' => 'LPJB',
             'reference_id'   => $lpjb->id,
             'period_id'      => $period->id,
             'status'         => 'draft'
@@ -446,7 +448,7 @@ class LpjbController extends Controller
                     'account_id' => $detail->coa_id,
                     'debit'      => $detail->real_subtotal,
                     'credit'     => 0,
-                    'memo'       => 'Biaya LPBJ ' . $lpjb->no_lpjb
+                    'memo'       => 'LPJB ' . $lpjb->no_lpjb . ' | Realisasi biaya | PIC: ' . $pic
                 ]);
 
                 $totalRealisasi += $detail->real_subtotal;
@@ -458,76 +460,60 @@ class LpjbController extends Controller
 
         /*
     =========================================
-    2️⃣ JIKA REALISASI <= ADVANCE
+    2️⃣ CREDIT CASH ADVANCE
     =========================================
     */
-        if ($totalRealisasi <= $advanceAmount) {
+        JournalDetail::create([
+            'journal_id' => $journal->id,
+            'account_id' => $cashAdvanceAccount,
+            'debit'      => 0,
+            'credit'     => $advanceAmount,
+            'memo'       => 'LPJB ' . $lpjb->no_lpjb . ' | Penggunaan Cash Advance | PIC: ' . $pic
+        ]);
 
-            // Credit CA sebesar realisasi
-            JournalDetail::create([
-                'journal_id' => $journal->id,
-                'account_id' => $cashAdvanceAccount,
-                'debit'      => 0,
-                'credit'     => $totalRealisasi,
-                'memo'       => 'Pengurangan CA LPBJ' . $lpjb->no_lpjb
-            ]);
+        /*
+    =========================================
+    3️⃣ HITUNG SELISIH
+    =========================================
+    */
+        $selisih = $advanceAmount - $totalRealisasi;
 
-            // Jika ada sisa advance
-            if ($totalRealisasi < $advanceAmount) {
+        $kas = ChartOfAccount::where('code', '1101-002')->first();
 
-                $selisih = $advanceAmount - $totalRealisasi;
-
-                $kas = ChartOfAccount::where('code', '1101-002')->first();
-
-                if (!$kas) {
-                    throw new \Exception("COA 1101-002 tidak ditemukan.");
-                }
-
-                JournalDetail::create([
-                    'journal_id' => $journal->id,
-                    'account_id' => $kas->id,
-                    'debit'      => $selisih,
-                    'credit'     => 0,
-                    'memo'       => 'Pengembalian sisa Cash Advance' . $lpjb->no_lpjb
-                ]);
-            }
+        if (!$kas) {
+            throw new \Exception("COA 1101-002 Kas Besar tidak ditemukan.");
         }
 
         /*
     =========================================
-    3️⃣ JIKA REALISASI > ADVANCE
+    4️⃣ JIKA ADA SELISIH
     =========================================
-    */ else {
+    */
+        if ($selisih > 0) {
 
-            // Credit CA sebesar advance
+            // Sisa CA dikembalikan ke kas
             JournalDetail::create([
                 'journal_id' => $journal->id,
-                'account_id' => $cashAdvanceAccount,
-                'debit'      => 0,
-                'credit'     => $advanceAmount,
-                'memo'       => 'Pengurangan CA LPBJ' . $lpjb->no_lpjb
+                'account_id' => $kas->id,
+                'debit'      => $selisih,
+                'credit'     => 0,
+                'memo'       => 'LPJB ' . $lpjb->no_lpjb . ' | Pengembalian sisa Cash Advance | PIC: ' . $pic
             ]);
+        } elseif ($selisih < 0) {
 
-            $selisih = $totalRealisasi - $advanceAmount;
-
-            $hutang = ChartOfAccount::where('code', '2101-998')->first();
-
-            if (!$hutang) {
-                throw new \Exception("COA 2101-998 tidak ditemukan.");
-            }
-
+            // Kekurangan dibayar dari kas
             JournalDetail::create([
                 'journal_id' => $journal->id,
-                'account_id' => $hutang->id,
+                'account_id' => $kas->id,
                 'debit'      => 0,
-                'credit'     => $selisih,
-                'memo'       => 'Hutang kekurangan LPBJ' . $lpjb->no_lpjb
+                'credit'     => abs($selisih),
+                'memo'       => 'LPJB ' . $lpjb->no_lpjb . ' | Pembayaran kekurangan biaya | PIC: ' . $pic
             ]);
         }
 
         /*
     =========================================
-    4️⃣ SAFETY CHECK — HARUS BALANCE
+    5️⃣ SAFETY CHECK
     =========================================
     */
         $totalDebit  = $journal->details()->sum('debit');
@@ -537,7 +523,6 @@ class LpjbController extends Controller
             throw new \Exception("Journal LPJB tidak balance! Debit: {$totalDebit} | Credit: {$totalCredit}");
         }
 
-        // Simpan journal_id ke LPJB
         $lpjb->update([
             'journal_id' => $journal->id
         ]);

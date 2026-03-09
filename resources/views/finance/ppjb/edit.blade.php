@@ -46,9 +46,15 @@
                         <label>Pengajuan Untuk</label>
                         <select name="jenis_pengajuan" id="jenis_pengajuan" class="form-control" required>
                             <option value="">-- Pilih --</option>
+
                             <option value="project" {{ $ppjb->jenis_pengajuan == 'project' ? 'selected' : '' }}>
                                 Project
                             </option>
+
+                            <option value="project_migas" {{ $ppjb->jenis_pengajuan == 'project_migas' ? 'selected' : '' }}>
+                                Project Migas
+                            </option>
+
                             <option value="non_project" {{ $ppjb->jenis_pengajuan == 'non_project' ? 'selected' : '' }}>
                                 Non Project
                             </option>
@@ -57,7 +63,8 @@
                 </div>
 
                 {{-- PROJECT SECTION --}}
-                <div id="projectSection" style="{{ $ppjb->jenis_pengajuan == 'project' ? '' : 'display:none;' }}">
+                <div id="projectSection"
+                    style="{{ in_array($ppjb->jenis_pengajuan, ['project', 'project_migas']) ? '' : 'display:none;' }}">
 
                     <div class="row mt-3">
                         <div class="col-md-12">
@@ -70,7 +77,7 @@
                                     <option value="{{ $project['workflowid'] }}"
                                         data-noproject="{{ $project['no_project'] }}"
                                         data-start="{{ $project['date_start'] }}" data-end="{{ $project['date_end'] }}"
-                                        {{ $ppjb->workflow_id == $project['workflowid'] ? 'selected' : '' }}>
+                                        {{ $ppjb->workflow_id == $project['workflowid'] || $ppjb->pr_workflow_id == $project['workflowid'] ? 'selected' : '' }}>
 
                                         {{ $project['no_sik'] }}
                                         @if ($project['extend'])
@@ -89,7 +96,7 @@
 
                 {{-- PROJECT INFO --}}
                 <div class="row mt-3" id="projectInfoSection"
-                    style="{{ $ppjb->jenis_pengajuan == 'project' ? '' : 'display:none;' }}">
+                    style="{{ in_array($ppjb->jenis_pengajuan, ['project', 'project_migas']) ? '' : 'display:none;' }}">
 
                     <div class="col-md-6">
                         <label>No Project</label>
@@ -285,6 +292,8 @@
             $('#grandTotal').text(grand.toLocaleString('id-ID'));
         }
 
+        $('.qty, .harga').trigger('change');
+
         /* =========================================
            DOCUMENT READY
         ========================================= */
@@ -413,7 +422,7 @@
 
             let val = $(this).val();
 
-            if (val === 'project') {
+            if (val === 'project' || val === 'project_migas') {
 
                 $('#projectSection').slideDown();
                 $('#projectInfoSection').slideDown();

@@ -22,6 +22,7 @@ class Ppjbnew extends Model
         'status',
         'journal_id',
         'total',
+        'created_by' // WAJIB ADA
     ];
 
     public function details()

@@ -24,9 +24,13 @@ use App\Http\Controllers\BalanceSheetController;
 use App\Http\Controllers\PeriodController;
 use App\Http\Controllers\PpjbnewController;
 use App\Http\Controllers\LpjbController;
+use App\Http\Controllers\MenuController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\PajakMigasController;
 use Illuminate\Support\Facades\Mail;
 
 
@@ -240,10 +244,21 @@ Route::middleware('auth')->group(function () {
 
     // PPJB
     Route::resource('ppjb-new', PpjbnewController::class);
+
+    // Pajak 
+    Route::get('/finance/pajak-migas',[PajakMigasController::class, 'index'])->name('pajak.migas');
+    Route::post('/finance/pajak-migas/process', [PajakMigasController::class,'process'])->name('pajak.migas.process');
 });
 
 
+// Menu
+Route::resource('menus', MenuController::class);
 
+// Roles
+Route::resource('roles', RoleController::class)->except(['show']);
+
+// Users
+Route::resource('users', UserController::class);
 
 
 // DAFIT

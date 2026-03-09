@@ -4,33 +4,24 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class SysUser extends Authenticatable
+class User extends Authenticatable
 {
     protected $table = 'sys_users';
+
     protected $primaryKey = 'userid';
-    protected $keyType = 'int';        // atau 'string' sesuai tipe kolom
+
     public $timestamps = false;
 
     protected $fillable = [
         'username',
         'password',
         'fullname',
-        'active'
+        'rolesid'
     ];
 
     protected $hidden = [
-        'password',
+        'password'
     ];
-
-    public function getNameAttribute()
-    {
-        return $this->fullname;
-    }
-
-    public function adminlte_profile_url()
-    {
-        return url('/activity-log');
-    }
 
     public function role()
     {
