@@ -246,8 +246,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('ppjb-new', PpjbnewController::class);
 
     // Pajak 
-    Route::get('/finance/pajak-migas',[PajakMigasController::class, 'index'])->name('pajak.migas');
-    Route::post('/finance/pajak-migas/process', [PajakMigasController::class,'process'])->name('pajak.migas.process');
+    Route::get('/finance/pajak-migas', [PajakMigasController::class, 'index'])->name('pajak.migas');
+    Route::post('/finance/pajak-migas/process', [PajakMigasController::class, 'process'])->name('pajak.migas.process');
+    Route::post('/pajak-migas/process-pic', [PajakMigasController::class, 'processPic'])->name('pajak.migas.process.pic');
+    Route::get('/pajak-migas/detail/{pic}', [PajakMigasController::class,'detail']);
 });
 
 
