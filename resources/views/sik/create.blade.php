@@ -108,9 +108,9 @@
                             <div class="col-md-9">
                                 <select name="leadnya_pilihan_jabatan_project" class="form-control">
                                     <option value="">-- Pilih Leader --</option>
-                                    @foreach ($leaderUsers as $k)
-                                        <option value="{{ $k->userid }}">
-                                            {{ $k->fullname }}
+                                    @foreach ($leaders as $k)
+                                        <option value="{{ $k->workflowid }}">
+                                            {{ $k->fullname }} - {{ $k->no_sik }}
                                         </option>
                                     @endforeach
                                 </select>

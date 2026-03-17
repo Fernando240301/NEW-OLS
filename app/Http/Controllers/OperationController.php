@@ -308,31 +308,25 @@ class OperationController extends Controller
             ->orderBy('userid')
             ->get();
 
-        $leaders = DB::table('app_workflow')
-            ->where('nworkflowid', $workflow->workflowid)
-            ->where('processname', 'surat_instruksi_kerja_01')
-            ->whereNotNull('workflowdata')
+        $leaders = DB::table('app_workflow as w')
+            ->leftJoin(
+                'sys_users as u',
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata,'$.user_inspector'))"),
+                '=',
+                'u.userid'
+            )
+            ->where('w.nworkflowid', $workflow->workflowid)
+            ->where('w.processname', 'surat_instruksi_kerja_01')
+            ->where('w.processcategory', 'New Certification')
+            ->select(
+                'w.workflowid',
+                'u.fullname',
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata,'$.no_sik')) as no_sik"),
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata,'$.pilihan_jabatan_project')) as jabatan")
+            )
             ->get()
-            ->map(function ($row) {
-                $json = json_decode($row->workflowdata, true);
-
-                if (($json['pilihan_jabatan_project'] ?? null) === 'Leader') {
-                    return $json['user_inspector'] ?? null;
-                }
-                return null;
-            })
-            ->filter()
-            ->unique()
+            ->where('jabatan', 'Leader')
             ->values();
-
-        /*
-        $leaders = collection of userid leader
-        */
-
-        $leaderUsers = DB::table('sys_users')
-            ->whereIn('userid', $leaders)
-            ->orderBy('fullname')
-            ->get();
 
         $scopes = DB::table('lov_jenis_peralatan as s')
             ->leftJoin('ref_jenis_peralatan as j', 'j.id', '=', 's.jenis')
@@ -348,7 +342,7 @@ class OperationController extends Controller
             ->get();
 
 
-        return view('sik.create', compact('workflowdata', 'noSik', 'workflow', 'namaInspector', 'leaderUsers', 'scopes'));
+        return view('sik.create', compact('workflowdata', 'noSik', 'workflow', 'namaInspector', 'leaders', 'scopes'));
     }
 
     public function storesik(Request $request)
@@ -504,18 +498,14 @@ class OperationController extends Controller
         }
     }
 
-    public function getLeaderData($workflowid, $userid)
+    public function getLeaderData($workflowid, $leaderWorkflowId)
     {
         $leaderWorkflow = DB::table('app_workflow')
+            ->where('workflowid', $leaderWorkflowId)
             ->where('nworkflowid', $workflowid)
             ->where('processname', 'surat_instruksi_kerja_01')
-            ->whereNotNull('workflowdata')
-            ->get()
-            ->first(function ($row) use ($userid) {
-                $json = json_decode($row->workflowdata, true);
-                return ($json['user_inspector'] ?? null) == $userid
-                    && ($json['pilihan_jabatan_project'] ?? null) == 'Leader';
-            });
+            ->where('processcategory', 'New Certification')
+            ->first();
 
         if (!$leaderWorkflow) {
             return response()->json([]);
@@ -559,23 +549,22 @@ class OperationController extends Controller
         $leaderUsers = DB::table('app_workflow as w')
             ->leftJoin(
                 'sys_users as u',
-                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata, '$.user_inspector'))"),
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata,'$.user_inspector'))"),
                 '=',
                 'u.userid'
             )
             ->where('w.nworkflowid', $projectId)
             ->where('w.processname', 'surat_instruksi_kerja_01')
+            ->where('w.processcategory', 'New Certification')
+            ->select(
+                'w.workflowid',
+                'u.fullname',
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata,'$.no_sik')) as no_sik"),
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata,'$.pilihan_jabatan_project')) as jabatan")
+            )
             ->get()
-            ->filter(function ($row) {
-                $json = json_decode($row->workflowdata, true);
-                return ($json['pilihan_jabatan_project'] ?? null) === 'Leader';
-            })
-            ->map(function ($row) {
-                return (object)[
-                    'userid' => json_decode($row->workflowdata, true)['user_inspector'],
-                    'fullname' => $row->fullname
-                ];
-            });
+            ->where('jabatan', 'Leader')
+            ->values();
 
         $scopes = DB::table('lov_jenis_peralatan as s')
             ->leftJoin('ref_jenis_peralatan as j', 'j.id', '=', 's.jenis')

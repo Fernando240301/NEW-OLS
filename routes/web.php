@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\PajakMigasController;
+use App\Http\Controllers\UnitController;
 use Illuminate\Support\Facades\Mail;
 
 
@@ -207,6 +208,14 @@ Route::middleware('auth')->group(function () {
     // ✅ TARUH INI PALING ATAS
     Route::get('/documents/download', [DocumentController::class, 'download'])->name('documents.download');
     Route::get('/documents/{workflowid}/{folderId?}', [DocumentController::class, 'documents'])->name('documents.index');
+
+    //Units
+    Route::get('/project/{workflowid}/units', [UnitController::class, 'index'])->name('units.index');
+    Route::get('/project/{projectId}/units/{unitId}', [UnitController::class, 'detail'])->name('units.detail');
+    Route::get('/units/get-types/{jenis}', [UnitController::class, 'getTypes']);
+    Route::get('/units/get-categories/{type}', [UnitController::class, 'getCategories']);
+    Route::get('/units/get-form/{category}/{type}', [UnitController::class, 'getForm']);
+    Route::get('/units/form/{project}/{unit}/{type}/{category}',[UnitController::class,'form'])->name('units.form');
 });
 
 // Finance (New)
@@ -249,7 +258,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/finance/pajak-migas', [PajakMigasController::class, 'index'])->name('pajak.migas');
     Route::post('/finance/pajak-migas/process', [PajakMigasController::class, 'process'])->name('pajak.migas.process');
     Route::post('/pajak-migas/process-pic', [PajakMigasController::class, 'processPic'])->name('pajak.migas.process.pic');
-    Route::get('/pajak-migas/detail/{pic}', [PajakMigasController::class,'detail']);
+    Route::get('/pajak-migas/detail/{pic}', [PajakMigasController::class, 'detail']);
 });
 
 

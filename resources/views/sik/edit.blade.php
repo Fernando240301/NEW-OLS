@@ -33,7 +33,7 @@
             @endif
 
             <form action="{{ route('sik.update', ['projectId' => $parentWorkflow->workflowid, 'id' => $sik->workflowid]) }}"
-                method="POST">
+                method="POST" enctype="multipart/form-data">
 
                 @csrf
                 @method('PUT')
@@ -86,12 +86,14 @@
                             <div class="col-md-9">
                                 <select name="user_inspector" class="form-control" required>
                                     <option value="">-- Pilih Inspector --</option>
+
                                     @foreach ($namaInspector as $k)
                                         <option value="{{ $k->userid }}"
                                             {{ ($workflowdata['user_inspector'] ?? '') == $k->userid ? 'selected' : '' }}>
                                             {{ $k->fullname }}
                                         </option>
                                     @endforeach
+
                                 </select>
                             </div>
                         </div>
@@ -121,9 +123,9 @@
                                 <select name="leadnya_pilihan_jabatan_project" class="form-control">
                                     <option value="">-- Pilih Leader --</option>
                                     @foreach ($leaderUsers as $k)
-                                        <option value="{{ $k->userid }}"
-                                            {{ ($workflowdata['leadnya_pilihan_jabatan_project'] ?? '') == $k->userid ? 'selected' : '' }}>
-                                            {{ $k->fullname }}
+                                        <option value="{{ $k->workflowid }}"
+                                            {{ ($workflowdata['leadnya_pilihan_jabatan_project'] ?? '') == $k->workflowid ? 'selected' : '' }}>
+                                            {{ $k->fullname }} - {{ $k->no_sik }}
                                         </option>
                                     @endforeach
                                 </select>
