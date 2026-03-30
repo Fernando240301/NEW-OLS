@@ -48,6 +48,7 @@
                             <option value="project">Project</option>
                             <option value="project_migas">Project (untuk MIGAS)</option>
                             <option value="non_project">Non Project</option>
+                            <option value="asset">Pembelian Aset</option>
                         </select>
                     </div>
 
