@@ -16,28 +16,29 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Yajra\DataTables\Facades\DataTables;
 
 class PpjbnewController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
-
-        // username tanpa huruf terakhir
         $usernameShort = substr($user->username, 0, -1);
 
+        // =========================
+        // PPJB LIST (OPTIMIZED)
+        // =========================
         if (strtolower($user->username) === 'fernando') {
 
-            $ppjbs = Ppjbnew::latest()->paginate(15);
+            $ppjbs = Ppjbnew::with('lpjbs')
+                ->latest()
+                ->paginate(15);
         } else {
 
-            $ppjbs = Ppjbnew::with('approvals')
+            $ppjbs = Ppjbnew::with(['lpjbs', 'approvals'])
                 ->where(function ($q) use ($user, $usernameShort) {
-
                     $q->where('created_by', $user->userid)
-
                         ->orWhere('pic', 'like', '%' . $usernameShort . '%')
-
                         ->orWhereHas('approvals', function ($a) use ($user) {
                             $a->where('user_id', $user->userid);
                         });
@@ -46,7 +47,239 @@ class PpjbnewController extends Controller
                 ->paginate(15);
         }
 
-        return view('finance.ppjb.index', compact('ppjbs'));
+        // =========================
+        // PRELOAD WORKFLOW (NO N+1)
+        // =========================
+        $workflowIds = $ppjbs->pluck('workflow_id')->filter();
+        $prWorkflowIds = $ppjbs->pluck('pr_workflow_id')->filter();
+
+        $workflows = DB::table('app_workflow')
+            ->whereIn('workflowid', $workflowIds->merge($prWorkflowIds))
+            ->get()
+            ->keyBy('workflowid');
+
+        // =========================
+        // REKAP (CACHE)
+        // =========================
+        $rekap = cache()->remember('rekap_ppjb', 60, function () {
+
+            return DB::table('ppjbnews as p')
+                ->leftJoin('lpjbs as l', 'p.id', '=', 'l.ppjb_id')
+                ->select(
+                    DB::raw('YEAR(p.tanggal_permohonan) as tahun'),
+                    DB::raw('MONTH(p.tanggal_permohonan) as bulan'),
+
+                    // =====================
+                    // PPJB
+                    // =====================
+                    DB::raw('COUNT(DISTINCT p.id) as total_ppjb'),
+                    DB::raw('SUM(p.total) as total_ppjb_nominal'),
+
+                    // =====================
+                    // LPJB
+                    // =====================
+                    DB::raw('COUNT(DISTINCT l.id) as total_lpjb'),
+                    DB::raw('COALESCE(SUM(l.total_realisasi),0) as total_lpjb_nominal'),
+
+                    // =====================
+                    // TANPA LPJB (MIGAS)
+                    // =====================
+                    DB::raw("
+                        COUNT(CASE 
+                            WHEN p.jenis_pengajuan = 'project_migas' 
+                            THEN 1 END
+                        ) as total_tanpa_lpjb
+                    "),
+
+                    DB::raw("
+                        SUM(CASE 
+                            WHEN p.jenis_pengajuan = 'project_migas' 
+                            THEN p.total ELSE 0 END
+                        ) as total_tanpa_lpjb_nominal
+                    "),
+
+                    // =====================
+                    // SELISIH
+                    // =====================
+                    DB::raw("
+                        SUM(p.total) - 
+                        (
+                            COALESCE(SUM(l.total_realisasi),0) +
+                            SUM(CASE 
+                                WHEN p.jenis_pengajuan = 'project_migas' 
+                                THEN p.total ELSE 0 END
+                            )
+                        ) as selisih
+                    ")
+                )
+                ->groupBy('tahun', 'bulan')
+                ->orderByDesc('tahun')
+                ->orderByDesc('bulan')
+                ->get();
+        });
+
+        return view('finance.ppjb.index', compact('ppjbs', 'rekap', 'workflows'));
+    }
+
+    public function rekapDetail(Request $request)
+    {
+        $month = $request->month;
+        $year  = $request->year;
+
+        $data = Ppjbnew::with('lpjbs')
+            ->whereMonth('tanggal_permohonan', $month)
+            ->whereYear('tanggal_permohonan', $year)
+            ->limit(100) // 🔥 penting biar gak berat
+            ->get()
+            ->map(function ($p) {
+
+                $lpjb = $p->lpjbs->first();
+
+                // MIGAS = dianggap sama
+                if ($p->jenis_pengajuan === 'project_migas') {
+                    $lpjb_total = $p->total;
+                } else {
+                    $lpjb_total = $lpjb ? $lpjb->total_realisasi : 0;
+                }
+
+                return [
+                    'no_ppjb' => $p->no_ppjb,
+                    'tanggal_permohonan' => $p->tanggal_permohonan,
+                    'pic' => $p->pic,
+                    'total' => $p->total,
+                    'status' => $p->status,
+                    'jenis_pengajuan' => $p->jenis_pengajuan,
+
+                    'lpjb_total' => $lpjb_total,
+                    'selisih' => $p->total - $lpjb_total
+                ];
+            });
+
+        return response()->json($data);
+    }
+
+    public function datatables()
+    {
+        $query = Ppjbnew::with('lpjbs');
+
+        return DataTables::of($query)
+
+            ->addColumn('tanggal', function ($p) {
+                return \Carbon\Carbon::parse($p->tanggal_permohonan)->format('d-m-Y');
+            })
+
+            ->addColumn('project_no', function ($p) {
+
+                if ($p->workflow_id) {
+                    $wf = DB::table('app_workflow')->where('workflowid', $p->workflow_id)->first();
+                    if ($wf) {
+                        $data = json_decode($wf->workflowdata, true);
+                        return $data['no_sik'] ?? '-';
+                    }
+                }
+
+                if ($p->pr_workflow_id) {
+                    $wf = DB::table('app_workflow')->where('workflowid', $p->pr_workflow_id)->first();
+                    if ($wf) {
+                        $data = json_decode($wf->workflowdata, true);
+                        return $data['project_number'] ?? '-';
+                    }
+                }
+
+                return '-';
+            })
+
+            ->addColumn('status_ppjb', function ($p) {
+                if ($p->status == 'draft') return '<span class="badge bg-secondary">Draft</span>';
+                if ($p->status == 'approved') return '<span class="badge bg-success">Approved</span>';
+                return '<span class="badge bg-danger">' . ucfirst($p->status) . '</span>';
+            })
+
+            ->addColumn('status_lpjb', function ($p) {
+
+                $lpjb = $p->lpjbs->first();
+
+                if ($p->jenis_pengajuan == 'project_migas') {
+                    return '<span class="badge bg-success">Done (Pajak)</span>';
+                }
+
+                if (!$lpjb) return '<span class="badge bg-light text-dark">Belum Ada</span>';
+
+                if ($lpjb->status == 'draft') return '<span class="badge bg-secondary">Draft</span>';
+                if ($lpjb->status == 'approved') return '<span class="badge bg-success">Done</span>';
+
+                return '<span class="badge bg-warning">' . $lpjb->status . '</span>';
+            })
+
+            ->addColumn('action_ppjb', function ($p) {
+
+                $btn = '<a href="' . route('ppjb-new.pdf', $p->id) . '" target="_blank" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i>
+                        </a>';
+
+                if ($p->status == 'draft') {
+                    $btn .= '<a href="' . route('ppjb-new.edit', $p->id) . '" class="btn btn-sm btn-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>';
+                }
+
+                // 🔥 TAMBAHAN BUTTON APPROVE
+                if ($p->status == 'draft') {
+                    $btn .= '
+                        <form method="POST" action="' . route('ppjb-new.approve', $p->id) . '" style="display:inline;">
+                            ' . csrf_field() . '
+                            <button class="btn btn-sm btn-success" 
+                                onclick="return confirm(\'Approve PPJB?\')">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </form>
+                    ';
+                }
+
+                return $btn;
+            })
+
+            ->addColumn('action_lpjb', function ($p) {
+
+                $lpjb = $p->lpjbs->first();
+
+                if ($p->jenis_pengajuan == 'project_migas') {
+                    return '<span class="badge bg-success">Done (Pajak)</span>';
+                }
+
+                if (!$lpjb) {
+
+                    if ($p->status == 'approved') {
+                        return '<a href="' . route('lpjb.create', $p->id) . '" class="btn btn-sm btn-secondary">
+                                    <i class="fas fa-file-invoice"></i>
+                                </a>';
+                    }
+
+                    return '-';
+                }
+
+                $btn = '<a href="' . route('lpjb.pdf', $lpjb->id) . '" target="_blank" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i>
+                        </a>';
+
+                // 🔥 TAMBAHAN BUTTON APPROVE
+                if ($lpjb->status == 'draft') {
+                    $btn .= '
+                        <form method="POST" action="' . route('lpjb.approve', $lpjb->id) . '" style="display:inline;">
+                            ' . csrf_field() . '
+                            <button class="btn btn-sm btn-success" 
+                                onclick="return confirm(\'Approve LPJB?\')">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </form>
+                    ';
+                }
+
+                return $btn;
+            })
+
+            ->rawColumns(['status_ppjb', 'status_lpjb', 'action_ppjb', 'action_lpjb'])
+            ->make(true);
     }
 
     public function create()
@@ -146,7 +379,7 @@ class PpjbnewController extends Controller
         $request->validate([
             'kepada'              => 'required|string',
             'dari'                => 'required|string',
-            'jenis_pengajuan' => 'required|in:project,project_migas,non_project',
+            'jenis_pengajuan' => 'required|in:project,project_migas,non_project,asset',
             'tanggal_permohonan'  => 'required|date',
             'details'             => 'required|array|min:1',
 

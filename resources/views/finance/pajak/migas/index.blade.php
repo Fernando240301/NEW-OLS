@@ -2,13 +2,15 @@
 
 @section('title', 'Pajak MIGAS')
 
+@section('plugins.Datatables', true)
+
 @section('content_header')
     <h1>Pajak Project MIGAS</h1>
 @stop
 
 @section('content')
 
-    <table class="table table-bordered">
+    <table id="table-pajak" class="table table-bordered table-striped">
 
         <thead>
             <tr>
@@ -32,11 +34,11 @@
                         {{ date('F', mktime(0, 0, 0, $pic->bulan, 1)) }}
                     </td>
 
-                    <td>
+                    <td class="text-right">
                         {{ number_format($pic->total, 0, ',', '.') }}
                     </td>
 
-                    <td>
+                    <td class="text-right">
                         {{ number_format($pic->pph21, 0, ',', '.') }}
                     </td>
 
@@ -253,6 +255,41 @@
             $('#pdfFrame').attr('src', url);
 
             $('#modalPreview').modal('show');
+
+        });
+    </script>
+
+    <script>
+        $(document).ready(function() {
+
+            $('#table-pajak').DataTable({
+                responsive: true,
+                autoWidth: false,
+                pageLength: 10,
+                order: [
+                    [1, 'asc']
+                ], // sort by bulan
+
+                columnDefs: [{
+                        orderable: false,
+                        targets: [4, 5]
+                    } // disable sort kolom action
+                ],
+
+                language: {
+                    search: "Cari:",
+                    lengthMenu: "Tampilkan _MENU_ data",
+                    zeroRecords: "Data tidak ditemukan",
+                    info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                    infoEmpty: "Tidak ada data",
+                    paginate: {
+                        first: "Awal",
+                        last: "Akhir",
+                        next: "→",
+                        previous: "←"
+                    }
+                }
+            });
 
         });
     </script>

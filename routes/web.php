@@ -224,6 +224,9 @@ Route::middleware('auth')->group(function () {
         Route::post('ppjb-new/{id}/approve', [PpjbnewController::class, 'approve'])->name('ppjb-new.approve');
         Route::post('/ppjb-new/{id}/revise', [PpjbnewController::class, 'revise'])->name('ppjb-new.revise');
         Route::get('/ppjb/{id}/pdf', [PpjbnewController::class, 'pdf'])->name('ppjb-new.pdf');
+        Route::get('/ppjb/rekap', [PpjbnewController::class, 'rekap'])->name('ppjb-new.rekap');
+        Route::get('/ppjb/rekap-detail', [PpjbnewController::class, 'rekapDetail'])->name('ppjb-new.rekap-detail');
+        Route::get('/ppjb-new/datatables', [PpjbnewController::class, 'datatables'])->name('ppjb-new.datatables');
         Route::get('/lpjb/create/{ppjb}', [LpjbController::class, 'create'])->name('lpjb.create');
         Route::post('/lpjb/store/{ppjb}', [LpjbController::class, 'store'])->name('lpjb.store');
         Route::get('/lpjb/{id}', [LpjbController::class, 'show'])->name('lpjb.show');
