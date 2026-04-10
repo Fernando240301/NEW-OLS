@@ -9,6 +9,13 @@
 @stop
 
 @section('content')
+@if ($errors->any())
+    <div class="alert alert-danger">
+        @foreach ($errors->all() as $error)
+            <div>{{ $error }}</div>
+        @endforeach
+    </div>
+@endif
 
     <form method="POST" action="{{ route('ppjb-new.store') }}">
         @csrf
@@ -32,6 +39,7 @@
                             <option value="">-- Pilih Departemen --</option>
                             <option value="Dept. Operasional">Dept. Operasional</option>
                             <option value="Dept. Marketing">Dept. Marketing</option>
+                            <option value="Dept. HSE">Dept. HSE</option>
                             <option value="Dept. Keuangan">Dept. Keuangan</option>
                             <option value="Dept. IT">Dept. IT</option>
                             <option value="Dept. HR/GA">Dept. HR/GA</option>
@@ -57,21 +65,18 @@
                     <div class="row mt-3">
                         <div class="col-md-12">
                             <label>Pilih Project (SIK)</label>
-                            <select name="workflow_id" id="projectSelect" class="form-control select2">
+                            <select name="workflow_id[]" id="projectSelect" class="form-control select2bs4" multiple style="width:150%">
 
                                 <option value="">-- Pilih Project --</option>
 
                                 @foreach ($projects as $project)
                                     <option value="{{ $project['workflowid'] }}"
                                         data-noproject="{{ $project['no_project'] }}"
-                                        data-start="{{ $project['date_start'] }}" data-end="{{ $project['date_end'] }}">
+                                        data-nama="{{ $project['projectname'] }}"
+                                        data-start="{{ $project['date_start'] }}"
+                                        data-end="{{ $project['date_end'] }}">
 
-                                        {{ $project['no_sik'] }}
-                                        @if ($project['extend'])
-                                            (Extend)
-                                        @endif
-                                        | {{ $project['client'] }}
-                                        | {{ $project['location'] }}
+                                        {{ $project['no_sik'] ?? $project['no_project'] }}
 
                                     </option>
                                 @endforeach
@@ -97,7 +102,7 @@
                 <div class="row mt-3" id="projectInfoSection" style="display:none;">
                     <div class="col-md-6">
                         <label>No Project</label>
-                        <input type="text" name="project_no" id="project_no" class="form-control" readonly>
+                        <input type="text" name="project_no" id="project_no" class="form-control">
                     </div>
 
                     <div class="col-md-6">
@@ -129,7 +134,7 @@
                 <div class="row mt-3">
                     <div class="col-md-6">
                         <label>Pekerjaan</label>
-                        <input type="text" name="pekerjaan" id="pekerjaan" class="form-control">
+                        <input type="text" name="pekerjaan" id="pekerjaan" class="form-control" required>
                     </div>
 
                     <div class="col-md-6">
@@ -138,18 +143,35 @@
 
                         {{-- MODE NORMAL --}}
                         <div id="picNormal">
-                            <input type="text" class="form-control" value="{{ $user->fullname }}" readonly>
+                            <select name="pic" id="picNormalSelect" class="form-control select2bs4" style="width:100%">
+                                <option value="">-- Pilih PIC --</option>
 
-                            <input type="hidden" name="pic" id="picHidden" value="{{ $user->fullname }}">
+                                @foreach ($users as $u)
+                                    <option value="{{ $u->fullname }}"
+                                        {{ $u->userid == $user->userid ? 'selected' : '' }}>
+                                        {{ $u->fullname }}
+                                    </option>
+                                @endforeach
+
+                            </select>
                         </div>
 
                         {{-- MODE SPECIAL --}}
                         <div id="picSpecial" style="display:none;">
-                            <select name="pic_special" id="picSelect" class="form-control select2" style="width:100%;">
+                            <select name="pic_special" id="picSelect" class="form-control select2" style="width:100%">
+                                <option value="">-- Pilih PIC --</option>
+
+                                @foreach ($users as $u)
+                                    <option value="{{ $u->fullname }}">
+                                        {{ $u->fullname }}
+                                    </option>
+                                @endforeach
+
                             </select>
                         </div>
 
                     </div>
+
                 </div>
 
             </div>
@@ -163,6 +185,20 @@
             </div>
 
             <div class="card-body">
+
+            <div class="mb-2">
+                <label>
+                    <input type="checkbox" id="pph23Checkbox">
+                    PPH 23 (2%)
+                </label>
+            </div>
+
+            <div class="mb-2">
+                <label>
+                    <input type="checkbox" id="ppnCheckbox">
+                    PPN Masukan (11%)
+                </label>
+            </div>
 
                 <table class="table table-bordered table-sm align-middle" id="detailTable">
                     <thead class="table-light text-center">
@@ -254,9 +290,43 @@
         let index = 1;
 
         function initSelect2() {
+
+            // 🔥 EXCLUDE picNormalSelect
+            $('.select2bs4').not('#picNormalSelect').select2({
+                theme: 'bootstrap4',
+                placeholder: '-- Pilih --',
+                width: '100%',
+                minimumResultsForSearch: 0
+            });
+
+            // 🔥 KHUSUS PIC NORMAL (FREE INPUT)
+            $('#picNormalSelect').select2({
+                width: '100%',
+                placeholder: '-- Pilih / Ketik PIC --',
+                tags: true,
+                allowClear: true,
+                createTag: function (params) {
+                    let term = $.trim(params.term);
+
+                    if (term === '') return null;
+
+                    return {
+                        id: term,
+                        text: term,
+                        newTag: true
+                    };
+                }
+            });
+
             $('.coa-select').select2({
-                placeholder: 'Cari kode / nama COA...',
-                width: '100%'
+                width: '100%',
+                placeholder: "Cari kode / nama COA..."
+            });
+
+            $('#projectSelect').select2({
+                width: '100%',
+                placeholder: '-- Cari Project / No / Client --',
+                allowClear: true
             });
         }
 
@@ -295,19 +365,37 @@
         });
 
         $(document).on('keyup change', '.qty, .harga', function() {
+
             let row = $(this).closest('tr');
             let qty = parseFloat(row.find('.qty').val()) || 0;
             let harga = parseFloat(row.find('.harga').val()) || 0;
             let total = qty * harga;
 
-            row.find('.total').val(total);
+            row.find('.total').val(total.toLocaleString('id-ID'));
+
             calculateGrandTotal();
+            calculatePPH23();
+            calculatePPN();
         });
 
         function calculateGrandTotal() {
+
             let grand = 0;
-            $('.total').each(function() {
-                grand += parseFloat($(this).val()) || 0;
+
+            $('#detailTable tbody tr').each(function () {
+
+                let row = $(this);
+
+                let val = parseFloat(
+                    row.find('.total').val().replace(/\./g, '').replace(',', '.')
+                ) || 0;
+
+                if (row.hasClass('pph23-row')) {
+                    grand -= val; // ❗ PPH dikurang
+                } else {
+                    grand += val; // barang + PPN
+                }
+
             });
 
             $('#grandTotal').text(grand.toLocaleString('id-ID'));
@@ -357,7 +445,7 @@
 
                 const keywords = [
                     'pemkes',
-                    'pemeriksaan keselamatan'
+                    'keselamatan'
                 ];
 
                 let found = keywords.some(keyword => value.includes(keyword));
@@ -377,28 +465,59 @@
 
         $('#projectSelect').on('change', function() {
 
-            let selected = $(this).find(':selected');
+            let selectedOptions = $(this).find(':selected');
 
-            // 🔥 AMBIL NO PROJECT
-            let noProject = selected.data('noproject');
-            $('#project_no').val(noProject);
+            let projectNos = [];
+            let startDates = [];
+            let endDates = [];
 
-            // 🔥 AMBIL TANGGAL
-            let startDate = selected.data('start');
-            let endDate = selected.data('end');
+            selectedOptions.each(function () {
+                let opt = $(this);
 
-            if (startDate && endDate) {
+                // 🔥 ambil SEMUA project
+                let raw = opt.data('noproject');
+                let nama = opt.data('nama');
 
-                if (startDate === endDate) {
-                    $('#tanggal_display').val(startDate);
-                } else {
-                    $('#tanggal_display').val(startDate + ' s.d ' + endDate);
+                if (raw) {
+
+                    // 🔥 NORMALISASI PR-PR jadi PR
+                    let clean = raw.replace(/^PR-PR-/i, 'PR-');
+
+                    // 🔥 GABUNGKAN DENGAN NAMA PROJECT
+                    if (nama) {
+                        projectNos.push(clean + ' - ' + nama);
+                    } else {
+                        projectNos.push(clean);
+                    }
                 }
 
-                $('#tanggal_mulai').val(startDate);
-                $('#tanggal_selesai').val(endDate);
-            }
+                if (opt.data('start')) {
+                    startDates.push(opt.data('start'));
+                }
 
+                if (opt.data('end')) {
+                    endDates.push(opt.data('end'));
+                }
+            });
+
+            // ✅ tampilkan SEMUA (bukan cuma 1)
+            $('#project_no').val(projectNos.join(', '));
+
+            // 🔥 handle tanggal range
+            if (startDates.length && endDates.length) {
+
+                let minStart = startDates.sort()[0];
+                let maxEnd = endDates.sort().slice(-1)[0];
+
+                if (minStart === maxEnd) {
+                    $('#tanggal_display').val(minStart);
+                } else {
+                    $('#tanggal_display').val(minStart + ' s.d ' + maxEnd);
+                }
+
+                $('#tanggal_mulai').val(minStart);
+                $('#tanggal_selesai').val(maxEnd);
+            }
         });
 
         $('#jenis_pengajuan').change(function() {
@@ -417,18 +536,25 @@
 {!! collect($projects)->map(function ($p) {
         return "<option value='{$p['workflowid']}'
 data-noproject='{$p['no_project']}'
+data-nama='{$p['projectname']}'
 data-start='{$p['date_start']}'
 data-end='{$p['date_end']}'>
-{$p['no_sik']} | {$p['client']} | {$p['location']}
+{$p['no_sik']} | {$p['projectname']} | {$p['client']}
 </option>";
     })->implode('') !!}
 `);
 
-                $('#projectSelect').trigger('change.select2');
+                $('#projectSelect').select2('destroy');
+
+                $('#projectSelect').select2({
+                    width: '100%',
+                    placeholder: '-- Cari Project / No / Client --',
+                    allowClear: true
+                });
 
                 $('#tanggal_display')
-                    .attr('type', 'text')
-                    .prop('readonly', true)
+                    .attr('type', 'date')
+                    .prop('readonly', false)
                     .val('');
 
             } else if (val === 'project_migas') {
@@ -439,10 +565,25 @@ data-end='{$p['date_end']}'>
                 $('label:contains("Pilih Project")').text('Pilih Project (PR)');
 
                 $('#projectSelect').html(`
-<option value="">-- Pilih Project MIGAS --</option>
-` + $('#migasOptions').html());
+<option value="">-- Pilih Project --</option>
+{!! collect($projects)->map(function ($p) {
+        return "<option value='{$p['workflowid']}'
+data-noproject='{$p['no_project']}'
+data-nama='{$p['projectname']}'
+data-start='{$p['date_start']}'
+data-end='{$p['date_end']}'>
+{$p['no_sik']} | {$p['projectname']} | {$p['client']}
+</option>";
+    })->implode('') !!}
+`);
 
-                $('#projectSelect').trigger('change.select2');
+                $('#projectSelect').select2('destroy');
+
+                $('#projectSelect').select2({
+                    width: '100%',
+                    placeholder: '-- Cari Project / No / Client --',
+                    allowClear: true
+                });
 
                 $('#tanggal_display')
                     .attr('type', 'date')
@@ -467,7 +608,10 @@ data-end='{$p['date_end']}'>
 
         });
 
-        $('#tanggal_display').on('change', function() {
+        // ===============================
+        // FIX NON PROJECT TANGGAL
+        // ===============================
+        $('#tanggal_display').on('change', function () {
 
             let date = $(this).val();
 
@@ -475,7 +619,306 @@ data-end='{$p['date_end']}'>
                 $('#tanggal_mulai').val(date);
                 $('#tanggal_selesai').val(date);
             }
+        });
+
+        // ===============================
+        // FALLBACK SAAT SUBMIT (WAJIB)
+        // ===============================
+        $('form').on('submit', function () {
+
+            let display = $('#tanggal_display').val();
+
+            if (display && !$('#tanggal_mulai').val()) {
+                $('#tanggal_mulai').val(display);
+                $('#tanggal_selesai').val(display);
+            }
+        });
+
+        $('#jenis_pengajuan').change(function () {
+
+            let val = $(this).val();
+
+            if (val === 'non_project') {
+
+                // 🔥 HAPUS VALUE
+                $('#projectSelect').val(null).trigger('change');
+
+                // 🔥 HAPUS NAME BIAR TIDAK KEKIRIM
+                $('#projectSelect').removeAttr('name');
+
+            } else {
+
+                // 🔥 BALIKKAN NAME
+                $('#projectSelect').attr('name', 'workflow_id[]');
+            }
+        });
+
+        let ppnIndex = null;
+
+        $('#ppnCheckbox').change(function () {
+
+            if ($(this).is(':checked')) {
+                addPPNRow();
+            } else {
+                removePPNRow();
+            }
 
         });
+
+        function addPPNRow() {
+
+    if (ppnIndex !== null) return;
+
+    let coaId = null;
+
+    $('.coa-select option').each(function () {
+        if ($(this).text().includes('1115-004')) {
+            coaId = $(this).val();
+        }
+    });
+
+    let row = `
+            <tr class="ppn-row">
+                <td>
+                    <select name="details[${index}][coa_id]" class="form-control coa-select">
+                        <option value="${coaId}" selected>1115-004 - PPN Masukan</option>
+                    </select>
+                </td>
+                <td><input type="number" name="details[${index}][qty]" value="1" class="form-control qty"></td>
+                <td><input type="text" name="details[${index}][satuan]" value="ls" class="form-control"></td>
+                <td><input type="text" name="details[${index}][uraian]" value="PPN Masukan 11%" class="form-control"></td>
+                <td><input type="number" name="details[${index}][harga]" class="form-control harga ppn-harga" readonly></td>
+                <td><input type="text" class="form-control total ppn-total" readonly></td>
+                <td><input type="text" name="details[${index}][keterangan]" value="PPN" class="form-control"></td>
+                <td></td>
+            </tr>
+            `;
+
+            $('#detailTable tbody').append(row);
+
+            ppnIndex = index;
+            index++;
+
+            calculatePPN();
+        }
+
+        function getSubtotal() {
+
+            let subtotal = 0;
+
+            $('#detailTable tbody tr').each(function () {
+
+                let row = $(this);
+
+                if (row.hasClass('ppn-row')) return;
+                if (row.hasClass('pph23-row')) return;
+
+                let val = parseFloat(
+                    row.find('.total').val().replace(/\./g, '').replace(',', '.')
+                ) || 0;
+
+                subtotal += val;
+            });
+
+            return subtotal;
+        }
+
+        function removePPNRow() {
+            $('.ppn-row').remove();
+            ppnIndex = null;
+            calculateGrandTotal();
+        }
+
+        function calculatePPN() {
+
+            if (ppnIndex === null) return;
+
+            let subtotal = getSubtotal();
+
+            let ppn = subtotal * 0.11;
+
+            $('.ppn-harga').val(ppn);
+            $('.ppn-total').val(ppn.toLocaleString('id-ID'));
+
+            calculateGrandTotal();
+        }
+
+        let pph23Index = null;
+
+        $('#pph23Checkbox').change(function () {
+
+            if ($(this).is(':checked')) {
+
+                addPPH23Row();
+
+            } else {
+
+                removePPH23Row();
+            }
+
+        });
+
+        function addPPH23Row() {
+
+            if (pph23Index !== null) return; // biar gak double
+
+            let coaId = null;
+
+            // 🔥 cari COA 1115-002 dari dropdown
+            $('.coa-select option').each(function () {
+                if ($(this).text().includes('1115-002')) {
+                    coaId = $(this).val();
+                }
+            });
+
+            let row = `
+            <tr class="pph23-row">
+                <td>
+                    <select name="details[${index}][coa_id]" class="form-control coa-select">
+                        <option value="${coaId}" selected>1115-002 - PPh Psl - 23 Bayar Dimuka</option>
+                    </select>
+                </td>
+                <td><input type="number" name="details[${index}][qty]" value="1" class="form-control qty"></td>
+                <td><input type="text" name="details[${index}][satuan]" value="ls" class="form-control"></td>
+                <td><input type="text" name="details[${index}][uraian]" value="Potongan PPH 23" class="form-control"></td>
+                <td><input type="number" name="details[${index}][harga]" class="form-control harga pph23-harga" readonly></td>
+                <td><input type="text" class="form-control total pph23-total" readonly></td>
+                <td><input type="text" name="details[${index}][keterangan]" value="PPH 23" class="form-control"></td>
+                <td></td>
+            </tr>
+            `;
+
+            $('#detailTable tbody').append(row);
+
+            pph23Index = index;
+            index++;
+
+            calculatePPH23();
+        }
+
+        function removePPH23Row() {
+            $('.pph23-row').remove();
+            pph23Index = null;
+            calculateGrandTotal();
+        }
+
+        function calculatePPH23() {
+
+            if (pph23Index === null) return;
+
+            let subtotal = getSubtotal(); // ✅ hanya dari barang
+
+            let pph = subtotal * 0.02;
+
+            $('.pph23-harga').val(pph);
+            $('.pph23-total').val(pph.toLocaleString('id-ID'));
+
+            calculateGrandTotal();
+        }
+
+        function formatRupiahNegative(val) {
+            return '(' + val.toLocaleString('id-ID') + ')';
+        }
     </script>
 @stop
+
+@section('css')
+    <style>
+        .select2-container--bootstrap4 .select2-selection {
+            height: calc(2.25rem + 2px);
+            border: 1px solid #ced4da;
+            border-radius: .25rem;
+        }
+
+        .select2-container--bootstrap4 .select2-selection__rendered {
+            line-height: 2.25rem;
+        }
+
+        .select2-container--bootstrap4 .select2-selection__arrow {
+            height: calc(2.25rem + 2px);
+        }
+
+        /* Pastikan Select2 ngikut form-control */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container--bootstrap4 .select2-selection {
+            height: calc(2.25rem + 2px);
+            border: 1px solid #ced4da;
+            border-radius: .25rem;
+            width: 100%;
+        }
+
+        /* text selected jadi hitam */
+        .select2-container--bootstrap4 .select2-selection__choice {
+            color: #000 !important;
+            background-color: #e9ecef !important; /* opsional biar tetap soft */
+            border-color: #0b78e5 !important;
+        }
+
+        /* teks di dalamnya */
+        .select2-container--bootstrap4 .select2-selection__choice__display {
+            color: #000 !important;
+        }
+
+        .select2-selection__choice {
+            color: #000 !important;
+        }
+
+        /* =========================
+        FIX KHUSUS PIC (NO THEME)
+        ========================= */
+
+        /* container PIC */
+        #picNormal .select2-container .select2-selection {
+            min-height: 38px !important;
+            height: auto !important;
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+        }
+
+        /* teks di dalam */
+        #picNormal .select2-selection__rendered {
+            line-height: normal !important;
+            display: flex;
+            align-items: center;
+        }
+
+        /* tombol clear (X) biar center */
+        #picNormal .select2-selection__clear {
+            margin-top: 0 !important;
+        }
+
+        /* arrow dropdown */
+        #picNormal .select2-selection__arrow {
+            height: 100% !important;
+        }
+
+        /* biar text gak turun */
+        #picNormal .select2-selection__rendered span {
+            line-height: normal !important;
+        }
+
+        .pph23-row {
+            background-color: #fff3cd; /* kuning soft */
+        }
+
+        .pph23-row .pph23-total,
+        .pph23-row .pph23-harga {
+            color: #dc3545; /* merah bootstrap */
+            font-weight: bold;
+        }
+
+        .ppn-row {
+            background-color: #d1ecf1; /* biru muda */
+        }
+
+        .ppn-row .ppn-total,
+        .ppn-row .ppn-harga {
+            color: #0c5460;
+            font-weight: bold;
+        }
+    </style>
+@endsection

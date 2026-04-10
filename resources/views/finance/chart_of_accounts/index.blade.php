@@ -42,7 +42,7 @@
 
             {{-- TABLE --}}
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table id="coa-table" class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th width="200">Code</th>
@@ -61,7 +61,7 @@
                             ])
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
+                                <td colspan="6" class="text-center text-muted py-4">
                                     Belum ada data COA
                                 </td>
                             </tr>
@@ -116,4 +116,47 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('css')
+
+<link rel="stylesheet"
+href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+
+@endsection
+
+@section('js')
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+
+<script>
+
+$(document).ready(function(){
+
+    $('#coa-table').DataTable({
+
+        responsive: true,
+        autoWidth: false,
+        pageLength: 25,
+        order: [[0,'asc']],
+
+        language: {
+            search: "Cari:",
+            lengthMenu: "Tampilkan _MENU_ data",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            paginate: {
+                previous: "Prev",
+                next: "Next"
+            },
+            zeroRecords: "Data tidak ditemukan"
+        }
+
+    });
+
+});
+
+</script>
+
 @endsection

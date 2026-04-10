@@ -12,144 +12,265 @@ use Illuminate\Support\Facades\DB;
 
 class PajakMigasController extends Controller
 {
-
     public function index()
     {
+        $ppjbs = Ppjbnew::where('status', 'approved')
+            ->where('tax_processed', 0)
+            ->where(function ($q) {
 
-        $ppjbs = Ppjbnew::where('jenis_pengajuan', 'project_migas')
-            ->where('status', 'approved')
-            ->where('tax_processed', false)
-            ->latest()
+                // 🔵 MIGAS → tetap tampil (tanpa filter LPJB)
+                $q->where('jenis_pengajuan', 'project_migas')
+
+                    // 🟢 NON MIGAS → hanya yg belum LPJB
+                    ->orWhere(function ($q2) {
+                        $q2->where('jenis_pengajuan', '!=', 'project_migas')
+                            ->whereDoesntHave('lpjbs');
+                    });
+            })
+            ->orderBy('tanggal_permohonan')
             ->get();
 
-        return view('finance.pajak.migas.index', compact('ppjbs'));
+        foreach ($ppjbs as $ppjb) {
+
+            $akumulasi = Ppjbnew::where('pic', $ppjb->pic)
+                ->where('tax_processed', 1)
+                ->sum('total');
+
+            $ppjb->pph21_preview = $this->hitungPph21($akumulasi, $ppjb->total);
+        }
+
+        $pics = Ppjbnew::whereIn('status', ['approved', 'paid'])
+            ->where('tax_processed', 0)
+            ->where(function ($q) {
+
+                $q->where('jenis_pengajuan', 'project_migas')
+
+                    ->orWhere(function ($q2) {
+                        $q2->where('jenis_pengajuan', '!=', 'project_migas')
+                            ->whereDoesntHave('lpjbs');
+                    });
+            })
+            ->select(
+                'pic',
+                DB::raw('MONTH(tanggal_permohonan) as bulan'),
+                DB::raw('SUM(total) as total')
+            )
+            ->groupBy('pic', 'bulan')
+            ->orderBy('bulan')
+            ->get();
+
+        foreach ($pics as $pic) {
+
+            $pic->pph21 = $this->hitungPph21(0, $pic->total);
+        }
+
+        return view('finance.pajak.migas.index', compact('ppjbs', 'pics'));
     }
 
+    private function hitungPph21($akumulasi, $fee)
+    {
+
+        $layers = [
+            [0, 60000000, 0.05],
+            [60000000, 250000000, 0.15],
+            [250000000, 500000000, 0.25],
+            [500000000, PHP_INT_MAX, 0.35]
+        ];
+
+        $pajak = 0;
+        $sisa = $fee;
+        $current = $akumulasi;
+
+        foreach ($layers as $layer) {
+
+            $max = $layer[1];
+            $rate = $layer[2];
+
+            if ($current >= $max) {
+                continue;
+            }
+
+            $space = $max - $current;
+
+            $kena = min($space, $sisa);
+
+            $pajak += $kena * $rate;
+
+            $sisa -= $kena;
+            $current += $kena;
+
+            if ($sisa <= 0) {
+                break;
+            }
+        }
+
+        return $pajak;
+    }
+
+    public function detail($pic)
+    {
+
+        $bulan = request('bulan');
+
+        $ppjbs = Ppjbnew::where('pic', $pic)
+            ->where('tax_processed', 0)
+            ->whereMonth('tanggal_permohonan', $bulan)
+            ->where(function ($q) {
+
+                $q->where('jenis_pengajuan', 'project_migas')
+
+                    ->orWhere(function ($q2) {
+                        $q2->where('jenis_pengajuan', '!=', 'project_migas')
+                            ->whereDoesntHave('lpjbs');
+                    });
+            })
+            ->orderBy('tanggal_permohonan')
+            ->get(['id', 'no_ppjb', 'total']);
+
+        foreach ($ppjbs as $p) {
+            $p->pdf_url = route('ppjb-new.pdf', $p->id);
+        }
+
+        $akumulasi = Ppjbnew::where('pic', $pic)
+            ->where('tax_processed', 1)
+            ->sum('total');
+
+        $simulasi = $this->simulasiPph21($ppjbs, $akumulasi);
+
+        $total = $ppjbs->sum('total');
+
+        $pph21 = collect($simulasi)->sum('pajak');
+
+        return response()->json([
+            'ppjbs' => $ppjbs,
+            'simulasi' => $simulasi,
+            'total' => $total,
+            'pph21' => $pph21
+        ]);
+    }
+
+    public function processPic(Request $request)
+    {
+
+        $ppjbs = Ppjbnew::where('pic', $request->pic)
+            ->whereMonth('tanggal_permohonan', $request->bulan)
+            ->where('tax_processed', 0)
+            ->where(function ($q) {
+
+                $q->where('jenis_pengajuan', 'project_migas')
+
+                    ->orWhere(function ($q2) {
+                        $q2->where('jenis_pengajuan', '!=', 'project_migas')
+                            ->whereDoesntHave('lpjbs');
+                    });
+            })
+            ->get();
+
+        foreach ($ppjbs as $ppjb) {
+
+            $ppjb->update([
+                'tax_processed' => 1
+            ]);
+        }
+
+        return back()->with('success', 'Pajak berhasil diproses');
+    }
 
     public function process(Request $request)
     {
 
-        DB::transaction(function () use ($request) {
+        $ppjb = Ppjbnew::where(function ($q) {
 
-            $ppjb = Ppjbnew::findOrFail($request->ppjb_id);
+            $q->where('jenis_pengajuan', 'project_migas')
 
-            $period = AccountingPeriod::where('status', 'open')->first();
+                ->orWhere(function ($q2) {
+                    $q2->where('jenis_pengajuan', '!=', 'project_migas')
+                        ->whereDoesntHave('lpjbs');
+                });
+        })->findOrFail($request->ppjb_id);
 
-            if (!$period) {
-                throw new \Exception("Tidak ada periode open.");
+        $fee = $ppjb->total;
+
+        $akumulasi = Ppjbnew::where('pic', $ppjb->pic)
+            ->where('tax_processed', 1)
+            ->sum('total');
+
+        $pph21 = $this->hitungPph21($akumulasi, $fee);
+
+        $ppjb->update([
+            'tax_processed' => 1
+        ]);
+
+        return back()->with('success', 'PPH21 berhasil diproses');
+    }
+
+    private function simulasiPph21($ppjbs, $akumulasiAwal)
+    {
+
+        $layers = [
+            [0, 60000000, 0.05],
+            [60000000, 250000000, 0.15],
+            [250000000, 500000000, 0.25],
+            [500000000, PHP_INT_MAX, 0.35]
+        ];
+
+        $akumulasi = $akumulasiAwal;
+
+        $rows = [];
+
+        foreach ($ppjbs as $ppjb) {
+
+            $fee = $ppjb->total;
+
+            $startAkumulasi = $akumulasi;
+
+            $pajak = 0;
+            $sisa = $fee;
+            $current = $akumulasi;
+            $tarifText = '';
+
+            foreach ($layers as $layer) {
+
+                $max = $layer[1];
+                $rate = $layer[2];
+
+                if ($current >= $max) {
+                    continue;
+                }
+
+                $space = $max - $current;
+
+                $kena = min($space, $sisa);
+
+                if ($kena > 0) {
+
+                    $pajak += $kena * $rate;
+
+                    $tarifText .= ($rate * 100) . '% & ';
+
+                    $sisa -= $kena;
+
+                    $current += $kena;
+                }
+
+                if ($sisa <= 0) {
+                    break;
+                }
             }
 
-            $pph21 = (float) $request->input('pph21', 0);
-            $pph23 = (float) $request->input('pph23', 0);
-            $pph29 = (float) $request->input('pph29', 0);
+            $akumulasi += $fee;
 
-            $totalTax = $pph21 + $pph23 + $pph29;
+            $tarifText = rtrim($tarifText, ' & ');
 
-            if ($totalTax == 0) {
-                return;
-            }
+            $rows[] = [
+                'no_ppjb' => $ppjb->no_ppjb,
+                'fee' => $fee,
+                'akumulasi' => $akumulasi,
+                'tarif' => $tarifText,
+                'pajak' => $pajak
+            ];
+        }
 
-            $journal = Journal::create([
-                'journal_no' => 'TAX-' . now()->timestamp,
-                'journal_date' => now(),
-                'reference_type' => 'PAJAK MIGAS',
-                'reference_id' => $ppjb->id,
-                'period_id' => $period->id,
-                'status' => 'posted'
-            ]);
-
-            /*
-            ======================
-            DEBIT BIAYA PAJAK
-            ======================
-            */
-
-            $coaBiayaPajak = ChartOfAccount::where('code', '6101-001-08-02')->first();
-
-            if ($coaBiayaPajak) {
-
-                JournalDetail::create([
-                    'journal_id' => $journal->id,
-                    'account_id' => $coaBiayaPajak->id,
-                    'debit' => $totalTax,
-                    'credit' => 0,
-                    'memo' => 'Biaya Pajak PPJB ' . $ppjb->no_ppjb
-                ]);
-            }
-
-
-            /*
-            ======================
-            PPH21
-            ======================
-            */
-
-            if ($pph21 > 0) {
-
-                $coa = ChartOfAccount::where('code', '2104-001')->first();
-
-                JournalDetail::create([
-                    'journal_id' => $journal->id,
-                    'account_id' => $coa->id,
-                    'debit' => 0,
-                    'credit' => $pph21,
-                    'memo' => 'PPh21 PPJB ' . $ppjb->no_ppjb
-                ]);
-            }
-
-
-            /*
-            ======================
-            PPH23
-            ======================
-            */
-
-            if ($pph23 > 0) {
-
-                $coa = ChartOfAccount::where('code', '2104-002')->first();
-
-                JournalDetail::create([
-                    'journal_id' => $journal->id,
-                    'account_id' => $coa->id,
-                    'debit' => 0,
-                    'credit' => $pph23,
-                    'memo' => 'PPh23 PPJB ' . $ppjb->no_ppjb
-                ]);
-            }
-
-
-            /*
-            ======================
-            PPH29
-            ======================
-            */
-
-            if ($pph29 > 0) {
-
-                $coa = ChartOfAccount::where('code', '2104-005')->first();
-
-                JournalDetail::create([
-                    'journal_id' => $journal->id,
-                    'account_id' => $coa->id,
-                    'debit' => 0,
-                    'credit' => $pph29,
-                    'memo' => 'PPh29 PPJB ' . $ppjb->no_ppjb
-                ]);
-            }
-
-
-            /*
-            ======================
-            UPDATE PPJB
-            ======================
-            */
-
-            Ppjbnew::where('id', $ppjb->id)
-                ->update([
-                    'tax_processed' => 1
-                ]);
-        });
-
-        return back()->with('success', 'Pajak berhasil diproses');
+        return $rows;
     }
 }

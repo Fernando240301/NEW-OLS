@@ -49,11 +49,9 @@
                         </a>
 
                         {{-- Edit (jika belum approved) --}}
-                        @if ($doc['status'] !== 'approved' && $doc['status'] !== 'closed')
-                            <a href="{{ $doc['edit'] }}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                        @endif
+                        <a href="{{ route('ppjb-new.edit.verifikasi', $doc['id']) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-edit"></i>
+                        </a>
 
                         {{-- Approve --}}
                         <form action="{{ $doc['route'] }}" method="POST" style="display:inline-block">

@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\PajakMigasController;
+use App\Http\Controllers\RpumController;
 use Illuminate\Support\Facades\Mail;
 
 
@@ -181,6 +182,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/project-list/{id}/detail', [OperationController::class, 'detail'])->name('project_list.detail');
     Route::get('/project-list/scope/get', [OperationController::class, 'getScope'])->name('project_list.scope.get');
     Route::get('/kontrak/view/{filename}', [OperationController::class, 'viewKontrak'])->where('filename', '.*')->name('kontrak.view');
+    Route::get('/project_list/data', [OperationController::class, 'getData'])->name('project_list.data');
     Route::post('/project-list/file/upload', [OperationController::class, 'uploadMarketingFile'])->name('project_list.file.upload');
 
     //Surat Instruksi Kerja
@@ -224,6 +226,10 @@ Route::middleware('auth')->group(function () {
         Route::post('ppjb-new/{id}/approve', [PpjbnewController::class, 'approve'])->name('ppjb-new.approve');
         Route::post('/ppjb-new/{id}/revise', [PpjbnewController::class, 'revise'])->name('ppjb-new.revise');
         Route::get('/ppjb/{id}/pdf', [PpjbnewController::class, 'pdf'])->name('ppjb-new.pdf');
+        Route::get('/ppjb/rekap', [PpjbnewController::class, 'rekap'])->name('ppjb-new.rekap');
+        Route::get('/ppjb/rekap-detail', [PpjbnewController::class, 'rekapDetail'])->name('ppjb-new.rekap-detail');
+        Route::get('/ppjb-new/datatables', [PpjbnewController::class, 'datatables'])->name('ppjb-new.datatables');
+        Route::get('/ppjb/{id}/edit-verifikasi', [PpjbnewController::class, 'editVerifikasi'])->name('ppjb-new.edit.verifikasi');
         Route::get('/lpjb/create/{ppjb}', [LpjbController::class, 'create'])->name('lpjb.create');
         Route::post('/lpjb/store/{ppjb}', [LpjbController::class, 'store'])->name('lpjb.store');
         Route::get('/lpjb/{id}', [LpjbController::class, 'show'])->name('lpjb.show');
@@ -246,8 +252,17 @@ Route::middleware('auth')->group(function () {
     Route::resource('ppjb-new', PpjbnewController::class);
 
     // Pajak 
-    Route::get('/finance/pajak-migas',[PajakMigasController::class, 'index'])->name('pajak.migas');
-    Route::post('/finance/pajak-migas/process', [PajakMigasController::class,'process'])->name('pajak.migas.process');
+    Route::get('/finance/pajak-migas', [PajakMigasController::class, 'index'])->name('pajak.migas');
+    Route::post('/finance/pajak-migas/process', [PajakMigasController::class, 'process'])->name('pajak.migas.process');
+    Route::post('/pajak-migas/process-pic', [PajakMigasController::class, 'processPic'])->name('pajak.migas.process.pic');
+    Route::get('/pajak-migas/detail/{pic}', [PajakMigasController::class,'detail']);
+
+    // RPUM
+    Route::get('/rpum', [RpumController::class, 'index'])->name('rpum.index');
+    Route::post('/rpum/store/{id}', [RpumController::class, 'store'])->name('rpum.store');
+    Route::get('/rpum/datatables', [RpumController::class, 'datatables'])->name('rpum.datatables');
+    Route::get('/rpum/history/{id}', [RpumController::class, 'history']);
+    Route::get('/rpum/export', [RpumController::class, 'export'])->name('rpum.export');
 });
 
 

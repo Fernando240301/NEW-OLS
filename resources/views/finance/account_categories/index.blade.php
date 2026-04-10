@@ -27,7 +27,7 @@
             @endif
 
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table id="categories-table" class="table table-hover align-middle">
                     <thead class="thead-light">
                         <tr>
                             <th>Kode</th>
@@ -37,7 +37,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($categories as $category)
+                        @foreach($categories as $category)
                             <tr>
                                 <td>{{ $category->code ?? '-' }}</td>
                                 <td>{{ $category->name }}</td>
@@ -62,21 +62,41 @@
                                     </form>
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">
-                                    Belum ada data Category
-                                </td>
-                            </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>
-
-            <div class="mt-3">
-                {{ $categories->links() }}
-            </div>
-
         </div>
     </div>
+@endsection
+
+@section('css')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+@endsection
+
+@section('js')
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#categories-table').DataTable({
+        responsive: true,
+        autoWidth: false,
+        pageLength: 10,
+        language: {
+            search: "Cari:",
+            lengthMenu: "Tampilkan _MENU_ data",
+            info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            paginate: {
+                previous: "Prev",
+                next: "Next"
+            },
+            zeroRecords: "Data tidak ditemukan"
+        }
+    });
+});
+</script>
+
 @endsection

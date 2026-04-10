@@ -24,7 +24,7 @@ return new class extends Migration
 
     $table->foreign('ppjb_id')
           ->references('id')
-          ->on('PPJB')
+          ->on('ppjb')
           ->onDelete('cascade');
 });
     }

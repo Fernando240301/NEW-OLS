@@ -13,7 +13,7 @@
 
 
 @section('content_header')
-    <h1 style="text-align: center; color: blue;">{{ $workflowdata['projectname'] }}</h1>
+    <h1 style="text-align: center; color: blue;">{{ $app_workflow->projectname }}</h1>
 @endsection
 
 @section('content')
@@ -74,7 +74,7 @@
                     <label class="col-md-3 col-form-label">Expired Contract</label>
                     <div class="col-md-9">
                         <input type="text" class="form-control"
-                            value="{{ old('tanggal_akhir', date('d F Y', strtotime($workflowdata['tanggal_akhir']))) }}"
+                            value="{{ old('tanggal_akhir', date('d F Y', strtotime($workflowdata['tanggal_akhir_kerja']))) }}"
                             readonly>
                     </div>
                 </div>
@@ -93,7 +93,7 @@
                     <label class="col-md-3 col-form-label">Contact Person Client</label>
                     <div class="col-md-9">
                         <input type="text" name="contact_person" class="form-control"
-                            value="{{ old('contact_person', $workflowdata['contact_person']) }}" readonly>
+                            value="{{ old('contact_person', $workflowdata['contact_person'] ?? '-') }}" readonly>
                     </div>
                 </div>
 
@@ -101,7 +101,7 @@
                     <label class="col-md-3 col-form-label">Client Mobile Number</label>
                     <div class="col-md-9">
                         <input type="text" name="no_hp" class="form-control"
-                            value="{{ old('no_hp', $workflowdata['no_hp']) }}" readonly>
+                            value="{{ old('no_hp', $workflowdata['no_hp'] ?? '-') }}" readonly>
                     </div>
                 </div>
 
@@ -109,7 +109,7 @@
                     <label class="col-md-3 col-form-label">Client Email</label>
                     <div class="col-md-9">
                         <input type="text" name="email" class="form-control"
-                            value="{{ old('email', $workflowdata['email']) }}" readonly>
+                            value="{{ old('email', $workflowdata['email'] ?? '-') }}" readonly>
                     </div>
                 </div>
 
@@ -117,7 +117,7 @@
                     <label class="col-md-3 col-form-label">SA/SE/SR Contact Person</label>
                     <div class="col-md-9">
                         <input type="text" name="contact_person1" class="form-control"
-                            value="{{ old('contact_person1', $workflowdata['contact_person1']) }}" readonly>
+                            value="{{ old('contact_person1', $workflowdata['contact_person1'] ?? '-') }}" readonly>
                     </div>
                 </div>
 
@@ -125,7 +125,7 @@
                     <label class="col-md-3 col-form-label">SA/SE/SR Mobile Number</label>
                     <div class="col-md-9">
                         <input type="text" name="no_hp1" class="form-control"
-                            value="{{ old('no_hp1', $workflowdata['no_hp1']) }}" readonly>
+                            value="{{ old('no_hp1', $workflowdata['no_hp1'] ?? '-') }}" readonly>
                     </div>
                 </div>
 
@@ -133,14 +133,14 @@
                     <label class="col-md-3 col-form-label">Office Address</label>
                     <div class="col-md-9">
                         <input type="text" name="lokasi_kantor" class="form-control"
-                            value="{{ old('lokasi_kantor', $workflowdata['lokasi_kantor']) }}" readonly>
+                            value="{{ old('lokasi_kantor', $workflowdata['lokasi_kantor'] ?? '-') }}" readonly>
                     </div>
                 </div>
 
                 <div class="form-group row">
                     <label class="col-md-3 col-form-label">Site Address</label>
                     <div class="col-md-9">
-                        <input type="text" name="lokasi_kantor" class="form-control" value="{{ $siteAddressText }}"
+                        <input type="text" name="lokasi_site" class="form-control" value="{{ $siteAddressText }}"
                             readonly>
                     </div>
                 </div>
@@ -156,7 +156,7 @@
                     <label class="col-md-3 col-form-label">Project Value</label>
                     <div class="col-md-9">
                         <input type="text" name="harga_kontrak" class="form-control"
-                            value="{{ old('harga_kontrak', $workflowdata['harga_kontrak']) }}" readonly>
+                            value="{{ old('harga_kontrak', $workflowdata['harga_kontrak'] ?? '-') }}" readonly>
                     </div>
                 </div>
             </div>
@@ -208,7 +208,7 @@
 
                     <div class="col-md-9">
                         <div class="file-preview-list">
-                            @foreach ($workflowdata['lampiran_kontrak'] as $file)
+                            @foreach ((array) ($workflowdata['lampiran1'] ?? []) as $file)
                                 <div class="file-preview">
                                     <i class="fas fa-file-pdf fa-2x text-danger mb-2"></i>
                                     <div class="file-preview-name">
@@ -227,11 +227,11 @@
         </div>
 
         @php
-            $dokumenHse = $workflowdata['dokumen_hse'] ?? [];
-            $dokumenSimlok = $workflowdata['dokumen_simlok'] ?? [];
-            $dokumenSika = $workflowdata['dokumen_sika'] ?? [];
-            $dokumenPja = $workflowdata['dokumen_pja'] ?? [];
-            $dokumenLainnya = $workflowdata['dokumen_lainnya'] ?? [];
+            $dokumenHse = (array) ($workflowdata['dokumen_hse'] ?? []);
+            $dokumenSimlok = (array) ($workflowdata['dokumen_simlok'] ?? []);
+            $dokumenSika = (array) ($workflowdata['dokumen_sika'] ?? []);
+            $dokumenPja = (array) ($workflowdata['dokumen_pja'] ?? []);
+            $dokumenLainnya = (array) ($workflowdata['dokumen_lainnya'] ?? []);
         @endphp
 
         <div class="card card-outline card-primary mb-4 card-marketing">
@@ -252,14 +252,16 @@
                                     <div class="file-preview">
                                         <i class="fas fa-file-pdf fa-2x text-danger mb-2"></i>
 
-                                        <div class="file-preview-name">
-                                            {{ Str::limit($file, 30) }}
-                                        </div>
+                                        @if(!empty($file) && is_string($file))
+                                            <div class="file-preview-name">
+                                                {{ Str::limit($file, 30) }}
+                                            </div>
 
-                                        <a href="{{ route('kontrak.view', $file) }}" target="_blank"
-                                            class="btn btn-xs btn-primary mt-2">
-                                            Buka
-                                        </a>
+                                            <a href="{{ route('kontrak.view', $file) }}" target="_blank"
+                                                class="btn btn-xs btn-primary mt-2">
+                                                Buka
+                                            </a>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>
@@ -286,20 +288,22 @@
                     </label>
 
                     <div class="col-md-7">
-                        @if (count($dokumenSimlok))
+                        @if (!empty((array) $dokumenSimlok))
                             <div class="file-preview-list">
-                                @foreach ($dokumenSimlok as $file)
+                                @foreach ((array) $dokumenSimlok as $file)
                                     <div class="file-preview">
                                         <i class="fas fa-file-pdf fa-2x text-danger mb-2"></i>
 
-                                        <div class="file-preview-name">
-                                            {{ Str::limit($file, 30) }}
-                                        </div>
+                                        @if(!empty($file) && is_string($file))
+                                            <div class="file-preview-name">
+                                                {{ Str::limit($file, 30) }}
+                                            </div>
 
-                                        <a href="{{ route('kontrak.view', $file) }}" target="_blank"
-                                            class="btn btn-xs btn-primary mt-2">
-                                            Buka
-                                        </a>
+                                            <a href="{{ route('kontrak.view', $file) }}" target="_blank"
+                                                class="btn btn-xs btn-primary mt-2">
+                                                Buka
+                                            </a>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>
@@ -332,14 +336,16 @@
                                     <div class="file-preview">
                                         <i class="fas fa-file-pdf fa-2x text-danger mb-2"></i>
 
-                                        <div class="file-preview-name">
-                                            {{ Str::limit($file, 30) }}
-                                        </div>
+                                        @if(!empty($file) && is_string($file))
+                                            <div class="file-preview-name">
+                                                {{ Str::limit($file, 30) }}
+                                            </div>
 
-                                        <a href="{{ route('kontrak.view', $file) }}" target="_blank"
-                                            class="btn btn-xs btn-primary mt-2">
-                                            Buka
-                                        </a>
+                                            <a href="{{ route('kontrak.view', $file) }}" target="_blank"
+                                                class="btn btn-xs btn-primary mt-2">
+                                                Buka
+                                            </a>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>
@@ -372,14 +378,16 @@
                                     <div class="file-preview">
                                         <i class="fas fa-file-pdf fa-2x text-danger mb-2"></i>
 
-                                        <div class="file-preview-name">
-                                            {{ Str::limit($file, 30) }}
-                                        </div>
+                                        @if(!empty($file) && is_string($file))
+                                            <div class="file-preview-name">
+                                                {{ Str::limit($file, 30) }}
+                                            </div>
 
-                                        <a href="{{ route('kontrak.view', $file) }}" target="_blank"
-                                            class="btn btn-xs btn-primary mt-2">
-                                            Buka
-                                        </a>
+                                            <a href="{{ route('kontrak.view', $file) }}" target="_blank"
+                                                class="btn btn-xs btn-primary mt-2">
+                                                Buka
+                                            </a>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>
@@ -412,14 +420,16 @@
                                     <div class="file-preview">
                                         <i class="fas fa-file-pdf fa-2x text-danger mb-2"></i>
 
-                                        <div class="file-preview-name">
-                                            {{ Str::limit($file, 30) }}
-                                        </div>
+                                        @if(!empty($file) && is_string($file))
+                                            <div class="file-preview-name">
+                                                {{ Str::limit($file, 30) }}
+                                            </div>
 
-                                        <a href="{{ route('kontrak.view', $file) }}" target="_blank"
-                                            class="btn btn-xs btn-primary mt-2">
-                                            Buka
-                                        </a>
+                                            <a href="{{ route('kontrak.view', $file) }}" target="_blank"
+                                                class="btn btn-xs btn-primary mt-2">
+                                                Buka
+                                            </a>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>

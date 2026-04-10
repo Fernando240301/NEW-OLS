@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\WorkAssignmentApprovalMail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Yajra\DataTables\Facades\DataTables;
 
 class OperationController extends Controller
 {
@@ -30,6 +31,24 @@ class OperationController extends Controller
 
 
         return view('project_list.index', compact('data'));
+    }
+    
+    public function getData()
+    {
+        $query = DB::table('app_workflow as w')
+            ->leftJoin('pemohon as p', 'p.pemohonid', '=', DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata, '$.nik_pemohon'))"))
+            ->where('w.tipe', 'pr')
+            ->whereRaw("JSON_VALID(w.workflowdata)") // 🔥 INI KUNCI
+            ->orderBy('w.workflowid', 'desc')
+            ->select([
+                'w.workflowid',
+                'w.projectname',
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata, '$.project_number')) as project_number"),
+                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(w.workflowdata, '$.no_kontrak')) as contract_number"),
+                'p.nama_perusahaan as client_name'
+            ]);
+
+        return DataTables::of($query)->make(true);
     }
 
     //Detail Project
@@ -838,7 +857,10 @@ class OperationController extends Controller
     {
         $sik = DB::table('app_workflow')
             ->where('workflowid', $id)
-            ->where('processname', 'surat_instruksi_kerja_01')
+            ->whereIn('processname', [
+                'surat_instruksi_kerja_01',
+                'surat_instruksi_kerja_02'
+            ])
             ->first();
 
         if (!$sik) {
@@ -847,43 +869,70 @@ class OperationController extends Controller
 
         $arr = json_decode($sik->workflowdata, true);
 
-        // Ambil project induk
         $parent = DB::table('app_workflow')
             ->where('workflowid', $sik->nworkflowid)
             ->first();
 
+        // 🔥 tetap untuk kebutuhan project (client, project_number, dll)
         $raw = json_decode($parent->workflowdata ?? '{}', true);
+
+        /* =====================================================
+        * 🔥 TAMBAHAN KHUSUS EXTEND (PAKAI parentSIK)
+        * ===================================================== */
+        $parentSIK = null;
+
+        if (!empty($arr['no_sik_extend'])) {
+
+            $parentSIK = DB::table('app_workflow')
+                ->where('workflowid', $arr['no_sik_extend'])
+                ->whereIn('processname', [
+                    'surat_instruksi_kerja_01',
+                    'surat_instruksi_kerja_02'
+                ])
+                ->first();
+        }
+
+        $rawSIK = $parentSIK
+            ? json_decode($parentSIK->workflowdata ?? '{}', true)
+            : [];
 
         // Nama client
         $namaclient = DB::table('pemohon')
             ->where('pemohonid', $sik->client)
             ->value('nama_perusahaan');
 
-        // Nama inspector
+        $userInspector = $arr['user_inspector'] ?? $rawSIK['user_inspector'] ?? null;
+
         $nama = DB::table('sys_users')
-            ->where('userid', $arr['user_inspector'] ?? null)
+            ->where('userid', $userInspector)
             ->value('fullname');
 
-        // NIP
         $nip = DB::table('sys_users_detail')
             ->where('nama', $nama)
             ->value('nip');
 
+        $dataPeralatan = $arr['peralatan'] ?? $rawSIK['peralatan'] ?? [];
 
         /* =====================================================
      * AMBIL NAMA JENIS PERALATAN (JOIN)
      * ===================================================== */
 
         $jenisMap = [];
+        $peralatanList = [];
 
-        if (!empty($arr['peralatan'])) {
+        /* =========================
+        * PRIORITAS: DATA BARU
+        * ========================= */
+        if (!empty($arr['peralatan']) || !empty($rawSIK['peralatan'])) {
 
-            $typeIds = collect($arr['peralatan'])
+            $source = !empty($arr['peralatan']) ? $arr['peralatan'] : $rawSIK['peralatan'];
+
+            $peralatanList = $source;
+
+            $typeIds = collect($source)
                 ->pluck('type_peralatan')
                 ->filter()
-                ->map(function ($item) {
-                    return (int) $item; // ⬅️ paksa jadi integer
-                })
+                ->map(fn($item) => (int) $item)
                 ->unique()
                 ->values();
 
@@ -903,13 +952,65 @@ class OperationController extends Controller
             $jenisMap = $jenisData->keyBy('id');
         }
 
+        /* =========================
+        * FALLBACK: DATA LAMA (FIXED)
+        * ========================= */
+        else {
+
+            $peralatanList = collect();
+
+            for ($i = 1; $i <= 6; $i++) {
+
+                // 🔥 PRIORITAS:
+                // 1. parent SIK (extend)
+                // 2. current SIK (normal)
+
+                $type = $rawSIK["type_peralatan{$i}"]
+                    ?? $arr["type_peralatan{$i}"]
+                    ?? null;
+
+                if (empty($type)) {
+                    continue;
+                }
+
+                $peralatanList->push([
+                    'type_peralatan' => (int) $type,
+                    'jumlah' => $rawSIK["jumlah_alat_{$i}"]
+                        ?? $arr["jumlah_alat_{$i}"]
+                        ?? 0,
+                ]);
+            }
+
+            $typeIds = $peralatanList->pluck('type_peralatan')->unique();
+
+            $jenisData = DB::table('lov_jenis_peralatan')
+                ->leftJoin('ref_jenis_peralatan', 'lov_jenis_peralatan.jenis', '=', 'ref_jenis_peralatan.id')
+                ->leftJoin('ref_tipe_peralatan', 'lov_jenis_peralatan.tipe', '=', 'ref_tipe_peralatan.id')
+                ->leftJoin('ref_kategori_peralatan', 'lov_jenis_peralatan.kategori', '=', 'ref_kategori_peralatan.id')
+                ->whereIn('lov_jenis_peralatan.id', $typeIds)
+                ->select(
+                    'lov_jenis_peralatan.id',
+                    'ref_jenis_peralatan.nama as nama_jenis',
+                    'ref_tipe_peralatan.nama as nama_tipe',
+                    'ref_kategori_peralatan.nama as nama_kategori'
+                )
+                ->get();
+
+            $jenisMap = $jenisData->keyBy('id');
+        }
+        // dd($arr, $rawSIK);
+        
+
         $pdf = Pdf::loadView('sik.pdf', compact(
             'arr',
             'raw',
+            'rawSIK',
             'namaclient',
             'nama',
             'nip',
-            'jenisMap' // ⬅️ kirim ke blade
+            'dataPeralatan',
+            'jenisMap',
+            'peralatanList'
         ))->setPaper('A4', 'portrait');
 
         return $pdf->stream('SIK.pdf');

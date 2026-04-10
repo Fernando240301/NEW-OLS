@@ -342,11 +342,13 @@ return [
             'submenu' => [
                 [
                     'text' => 'Verifikasi WA',
-                    'route' => 'verifikasi.work_assignment', // ⬅️ PAKAI NAME ROUTE
+                    'route' => 'verifikasi.work_assignment',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
                 [
                     'text' => 'Verifikasi PPJB',
                     'route' => 'verifikasi.ppjb',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
             ],
         ],
@@ -357,14 +359,17 @@ return [
                 [
                     'text' => 'Work Assignment',
                     'url'  => '/work-assignment',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
                 [
                     'text' => 'Prospect',
                     'url'  => '/prospect',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
                 [
                     'text' => 'Draft Penawaran',
                     'url'  => '/penawaran',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
             ],
         ],
@@ -392,6 +397,7 @@ return [
             'text' => 'Client',
             'url' => 'client',
             'icon' => 'fas fa-fw fa-user',
+            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
         ],
         [
             'text' => 'System',
@@ -400,33 +406,40 @@ return [
                 [
                     'text' => 'Jenis Peralatan',
                     'url'  => '/jenis-peralatan',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
                 [
                     'text' => 'Tipe Peralatan',
                     'url' => '/typeperalatan',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
                 [
                     'text' => 'Kategori Peralatan',
                     'url' => '/kategori-peralatan',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
                 [
                     'text' => 'Jenis Layanan',
                     'url' => '/jenis-layanan',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
                 [
                     'text' => 'Users',
                     'route' => 'users.index',
-                    'icon' => 'fas fa-users'
+                    'icon' => 'fas fa-users',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
                 [
                     'text' => 'Menus',
                     'route' => 'menus.index',
                     'icon' => 'fas fa-bars',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
                 [
                     'text' => 'Roles',
                     'route' => 'roles.index',
                     'icon' => 'fas fa-user-shield',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
             ],
         ],
@@ -450,11 +463,20 @@ return [
                         ],
                     ]
                 ],
+                
+                [
+                    'text' => 'RPUM',
+                    'icon' => 'fas fa-money-bill-wave',
+                    'route' => 'rpum.index',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
+                ],
+
 
                 [
-                    'text' => 'Pajak MIGAS',
+                    'text' => 'Pajak PPH 21',
                     'icon' => 'fas fa-file-invoice',
-                    'route' => 'pajak.migas'
+                    'route' => 'pajak.migas',
+                    'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                 ],
 
                 [
@@ -464,6 +486,7 @@ return [
                             'text' => 'Manual Journal',
                             'route' => 'journals.index',
                             'icon' => 'fas fa-book-open',
+                            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                         ],
                     ],
                 ],
@@ -474,26 +497,31 @@ return [
                             'text' => 'Trial Balance',
                             'route' => 'trial.balance',
                             'icon' => 'fas fa-balance-scale',
+                            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                         ],
                         [
                             'text' => 'General Ledger',
                             'route' => 'general.ledger',
                             'icon' => 'fas fa-book',
+                            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                         ],
                         [
                             'text' => 'Income Statement',
                             'route' => 'income.statement',
                             'icon' => 'fas fa-chart-line',
+                            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                         ],
                         [
                             'text' => 'Balance Sheet',
                             'route' => 'balance.sheet',
                             'icon' => 'fas fa-landmark',
+                            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                         ],
                         [
                             'text' => 'Accounting Period',
                             'route' => 'period.index',
                             'icon' => 'fas fa-lock',
+                            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                         ],
                     ],
                 ],
@@ -504,14 +532,17 @@ return [
                             'text' => 'Chart of Accounts',
                             'route' => 'chart-of-accounts.index',
                             'icon' => 'fas fa-sitemap',
+                            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                         ],
                         [
                             'text' => 'Account Type',
                             'route'  => 'account-types.index',
+                            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                         ],
                         [
                             'text' => 'Account Category',
                             'route' => 'account-categories.index',
+                            'users' => ['fernando', 'Dafits', 'OCM', 'Dillaf', 'Ussif', 'Nisaf', 'Riflif', 'Fitrif', 'Linahg', 'beiby', 'Deam', 'Nuzuld', 'Albyc'],
                         ],
                     ],
                 ],
@@ -548,6 +579,7 @@ return [
     */
 
     'filters' => [
+        App\Filters\AdminLteUserFilter::class,
         JeroenNoten\LaravelAdminLte\Menu\Filters\GateFilter::class,
         JeroenNoten\LaravelAdminLte\Menu\Filters\HrefFilter::class,
         JeroenNoten\LaravelAdminLte\Menu\Filters\SearchFilter::class,

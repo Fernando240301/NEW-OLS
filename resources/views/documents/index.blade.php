@@ -218,7 +218,7 @@
 
 @section('content_header')
     <h1 class="text-center text-primary">
-        {{ $workflowdata['projectname'] }}
+        {{ $app_workflow->projectname }}
     </h1>
 @endsection
 

@@ -115,7 +115,7 @@ class MarketController extends Controller
                 'client'             => $request->client,
                 'no_kontrak'         => $request->no_kontrak,
                 'tanggal_kontrak'    => $request->tanggal_kontrak,
-                'tanggal_akhir'      => $request->tanggal_akhir_kerja,
+                'tanggal_akhir_kerja'=> $request->tanggal_akhir_kerja,
                 'lokasi_kantor'      => $request->lokasi_kantor,
                 'lokasi_lapangan'    => $request->lokasi_lapangan,
                 'harga_kontrak'      => $request->harga_kontrak,
@@ -141,7 +141,7 @@ class MarketController extends Controller
                 'lampiranhse'        => $request->lampiranhse,
 
                 // ⬇️ INI PENGGANTI file & file1 CI3
-                'lampiran_kontrak'   => $uploadedFiles,
+                'lampiran1'   => $uploadedFiles,
             ];
 
             /* =========================
@@ -234,7 +234,7 @@ class MarketController extends Controller
             /* =========================
          * 1. HANDLE FILE LAMA
          * ========================= */
-            $existingFiles = $workflowdata['lampiran_kontrak'] ?? [];
+            $existingFiles = $workflowdata['lampiran1'] ?? [];
 
             // hapus file yang dicentang
             if ($request->filled('delete_files')) {
@@ -270,7 +270,7 @@ class MarketController extends Controller
                 'client'           => $request->client,
                 'no_kontrak'       => $request->no_kontrak,
                 'tanggal_kontrak'  => $request->tanggal_kontrak,
-                'tanggal_akhir'    => $request->tanggal_akhir,
+                'tanggal_akhir_kerja'=> $request->tanggal_akhir,
                 'lokasi_kantor'    => $request->lokasi_kantor,
                 'lokasi_lapangan'  => $request->lokasi_lapangan,
                 'harga_kontrak'    => $request->harga_kontrak,
@@ -296,7 +296,7 @@ class MarketController extends Controller
                 'lampiranhse'      => $request->lampiranhse,
 
                 // gabungkan file lama + baru
-                'lampiran_kontrak' => array_merge($existingFiles, $newFiles),
+                'lampiran1' => array_merge($existingFiles, $newFiles),
             ]);
 
             /* =========================
@@ -444,8 +444,8 @@ class MarketController extends Controller
             ->translatedFormat('d F Y')
             : '-';
 
-        $expiredDate = !empty($workflow['tanggal_akhir'])
-            ? Carbon::parse($workflow['tanggal_akhir'])
+        $expiredDate = !empty($workflow['tanggal_akhir_kerja'])
+            ? Carbon::parse($workflow['tanggal_akhir_kerja'])
             ->locale('en')
             ->translatedFormat('d F Y')
             : '-';
@@ -481,8 +481,8 @@ class MarketController extends Controller
             ->translatedFormat('d F Y')
             : '-';
 
-        $expiredDate = !empty($workflow['tanggal_akhir'])
-            ? Carbon::parse($workflow['tanggal_akhir'])
+        $expiredDate = !empty($workflow['tanggal_akhir_kerja'])
+            ? Carbon::parse($workflow['tanggal_akhir_kerja'])
             ->locale('en')
             ->translatedFormat('d F Y')
             : '-';
@@ -514,7 +514,7 @@ class MarketController extends Controller
         }
 
         // === 3. Gabung kontrak ===
-        foreach ($workflow['lampiran_kontrak'] ?? [] as $file) {
+        foreach ($workflow['lampiran1'] ?? [] as $file) {
             $path = storage_path("app/private/public/kontrak/{$file}");
             if (!file_exists($path)) continue;
 
@@ -546,8 +546,8 @@ class MarketController extends Controller
             ? Carbon::parse($workflow['tanggal_kontrak'])->translatedFormat('d F Y')
             : '-';
 
-        $expiredDate = !empty($workflow['tanggal_akhir'])
-            ? Carbon::parse($workflow['tanggal_akhir'])->translatedFormat('d F Y')
+        $expiredDate = !empty($workflow['tanggal_akhir_kerja'])
+            ? Carbon::parse($workflow['tanggal_akhir_kerja'])->translatedFormat('d F Y')
             : '-';
 
         // 1. WA PDF
@@ -575,7 +575,7 @@ class MarketController extends Controller
         }
 
         // import kontrak
-        foreach ($workflow['lampiran_kontrak'] ?? [] as $file) {
+        foreach ($workflow['lampiran1'] ?? [] as $file) {
             $path = storage_path("app/private/public/kontrak/{$file}");
             if (!file_exists($path)) continue;
 
