@@ -8,21 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('accounting_periods', function (Blueprint $table) {
-            $table->id();
-            $table->integer('year');
-            $table->integer('month');
-            $table->date('start_date');
-            $table->date('end_date');
-            $table->enum('status', ['open', 'closed'])->default('open');
-            $table->timestamps();
+        // Schema::create('accounting_periods', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->integer('year');
+        //     $table->integer('month');
+        //     $table->date('start_date');
+        //     $table->date('end_date');
+        //     $table->enum('status', ['open', 'closed'])->default('open');
+        //     $table->timestamps();
 
-            $table->unique(['year', 'month']);
-        });
+        //     $table->unique(['year', 'month']);
+        // });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('accounting_periods');
+        // Schema::dropIfExists('accounting_periods');
     }
 };

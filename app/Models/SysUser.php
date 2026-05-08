@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
-
+use App\Models\SysUserDetail;
+use App\Models\DailyActivity;
 class SysUser extends Authenticatable
 {
     protected $table = 'sys_users';
@@ -36,4 +37,18 @@ class SysUser extends Authenticatable
     {
         return $this->belongsTo(Role::class, 'rolesid', 'id');
     }
+    public function detail()
+    {
+        return $this->hasOne(SysUserDetail::class, 'userid', 'userid');
+    }
+
+    public function dailyActivities()
+    {
+        return $this->hasMany(DailyActivity::class, 'user_id', 'userid');
+    }
+    public function user()
+{
+    return $this->belongsTo(SysUser::class, 'user_id', 'userid');
+}
+    
 }

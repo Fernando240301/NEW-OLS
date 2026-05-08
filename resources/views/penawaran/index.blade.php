@@ -56,7 +56,7 @@
     <td>{{ $item->nosurat }}</td>
     <td>{{ $item->judul }}</td>
     <td>{{ $item->namaclient }}</td>
-    <td>{{ $item->pic ?? '-' }}</td>
+    <td>{{ $item->pic ?? $item->SysUser->name ?? '-' }}</td>
     <td>{{ $item->picMitUser->name ?? '-' }}</td>
     <td>{{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') : '-' }}</td>
 
@@ -94,17 +94,17 @@
     {{-- BELUM APPROVE --}}
     @elseif (!$item->barcode)
 
-        @if ($item->can_approve)
-            <form action="{{ route('penawaran.approve', $item->id) }}"
-                  method="POST"
-                  onsubmit="return confirm('Approve penawaran ini?')">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-success">
-                    <i class="fas fa-check"></i> Approve
-                </button>
-            </form>
+        @if (strtolower(Auth::user()->username) === 'deam' && $item->can_approve)
+    <form action="{{ route('penawaran.approve', $item->id) }}"
+          method="POST"
+          onsubmit="return confirm('Approve penawaran ini?')">
+        @csrf
+        <button type="submit" class="btn btn-sm btn-success">
+            <i class="fas fa-check"></i> Approve
+        </button>
+    </form>
         @else
-            <span class="badge badge-warning">QR belum tersedia</span>
+            <span class="badge badge-warning">Tidak berhak approve</span>
         @endif
 
     {{-- SUDAH APPROVE --}}
@@ -133,15 +133,13 @@
         </a>
     @endif
 
-    {{-- PDF --}}
-    @if ($item->pdf)
-        <a href="{{ asset('storage/' . $item->pdf) }}"
-           class="btn btn-sm btn-success mb-1"
-           target="_blank">
-            <i class="fas fa-file-pdf"></i> PDF
-        </a>
+    @if (!empty($item->hash) && $item->barcode && !empty($item->pdf))
+    <a href="{{ route('penawaran.pdf', ['id' => $item->id, 'hash' => $item->hash]) }}"
+       class="btn btn-sm btn-danger mb-1"
+       target="_blank">
+        <i class="fas fa-file-pdf"></i> Preview PDF
+    </a>
     @endif
-
     {{-- EDIT (HANYA DRAFT) --}}
     @if (!$item->barcode && $item->status !== 'revision')
         <a href="{{ route('penawaran.edit', $item->id) }}"

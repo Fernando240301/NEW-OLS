@@ -348,6 +348,22 @@ return [
                     'text' => 'Verifikasi PPJB',
                     'route' => 'verifikasi.ppjb',
                 ],
+                [
+                    'text' => 'Approval Activity',
+                    'url'  => 'approval',
+                    'icon' => 'fas fa-check',
+
+                ],
+            ],
+        ],
+        [
+            'text' => 'Activity',
+            'icon' => 'fas fa-file-signature',
+            'submenu' => [
+                [
+                    'text' => 'Daily Activity',
+                    'route' => 'dailyactivity.index', // ⬅️ PAKAI NAME ROUTE
+                ],
             ],
         ],
         [
@@ -514,6 +530,17 @@ return [
                             'route' => 'account-categories.index',
                         ],
                     ],
+                ],
+                 [
+                    'text' => 'DAFTAR PO',
+                    'icon' => 'fas fa-file-contract',
+                    'submenu' => [
+                        [
+                            'text' => 'DAFTAR PO',
+                            'route' => 'daftarpo.index',
+                            'icon' => 'fas fa-list'
+                        ],
+                    ]
                 ],
             ],
         ],

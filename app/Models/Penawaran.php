@@ -25,7 +25,8 @@ class Penawaran extends Model
         'harga',
         'surat',
         'pdf',
-        'approved_word'
+        'approved_word',
+        'hash', 
     ];
 
     public function client()

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Auth;
@@ -12,32 +13,43 @@ use Endroid\QrCode\RoundBlockSizeMode\RoundBlockSizeModeMargin;
 use PhpOffice\PhpWord\TemplateProcessor;
 use Endroid\QrCode\Encoding\Encoding;
 use App\Models\Prospect;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use App\Models\JenisPeralatan;
 use App\Models\User;
+use PhpOffice\PhpWord\Shared\Html;
 use App\Models\SysUser;
 use App\Models\Penawaran;
 use PhpOffice\PhpWord\Element\TextRun;
 use PhpOffice\PhpWord\Element\Text;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpWord\SimpleType\Jc;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 class PenawaranController extends Controller
 {
     public function index()
 {
+    $user = Auth::user();
+
+    // 🔥 pakai username sebagai pembeda
+    $isDeam = strtolower($user->username) === 'deam';
+
     $data = Penawaran::with(['jenis', 'client','SysUser','picMitUser','approver'])
         ->get()
-        ->map(function ($item) {
+        ->map(function ($item) use ($isDeam) {
 
             $wordPath = storage_path('app/public/' . $item->surat);
 
-            $item->can_approve = false;
+            $hasPlaceholder = false;
 
             if ($item->surat && file_exists($wordPath)) {
-                $item->can_approve = $this->wordHasPlaceholder($wordPath, '${QR_TTD}');
+                $hasPlaceholder = $this->wordHasPlaceholder($wordPath, '${QR_TTD}');
             }
+
+            // 🔥 FINAL LOGIC APPROVE
+            $item->can_approve = $isDeam && $hasPlaceholder;
 
             return $item;
         });
@@ -75,176 +87,114 @@ class PenawaranController extends Controller
 public function store(Request $request)
 {
     $request->validate([
-        'nosurat'    => 'required|unique:penawaran,nosurat',
+        'nosurat' => 'required|unique:penawaran,nosurat',
         'surat' => 'required|mimes:doc,docx|max:5120',
-
     ]);
 
-    $userId = Auth::id();  // Ambil ID login
-    if (!$userId) {
-        return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu.');
-    }
     $filePath = null;
-
     $judul = null;
+    $namaClient = null;
 
-if ($request->hasFile('surat')) {
-    $file = $request->file('surat');
-    $filePath = $file->store('penawaran', 'public');
+    if ($request->hasFile('surat')) {
+        $file = $request->file('surat');
+        $filePath = $file->store('penawaran', 'public');
 
-    // BACA WORD
-$judul = '';
-$ambil = false;
+        $phpWord = IOFactory::load($file->getPathname());
 
-$stopKeywords = [
-    'kepada',
-    'dengan hormat',
-    'menindaklanjuti',
-    'sehubungan',
-];
+        $judul = '';
+        $ambilSubject = false;
 
-$phpWord = IOFactory::load($file->getPathname());
+        $ambilClient = false;
+        $namaClientLines = [];
 
-foreach ($phpWord->getSections() as $section) {
-    foreach ($section->getElements() as $element) {
+        foreach ($phpWord->getSections() as $section) {
+            foreach ($section->getElements() as $element) {
 
-        $text = '';
+                $text = '';
 
-        if ($element instanceof Text) {
-            $text = trim($element->getText());
-        }
+                if ($element instanceof Text) {
+                    $text = trim($element->getText());
+                }
 
-        if ($element instanceof TextRun) {
-            foreach ($element->getElements() as $child) {
-                if ($child instanceof Text) {
-                    $text .= $child->getText();
+                if ($element instanceof TextRun) {
+                    foreach ($element->getElements() as $child) {
+                        if ($child instanceof Text) {
+                            $text .= $child->getText();
+                        }
+                    }
+                    $text = trim($text);
+                }
+
+                if ($text === '') {
+                    // Jika baris kosong dan sudah mulai ambil subject, hentikan pengambilan
+                    if ($ambilSubject) {
+                        $ambilSubject = false;
+                    }
+                    // Jika baris kosong dan sedang ambil client, anggap selesai ambil client
+                    if ($ambilClient) {
+                        $ambilClient = false;
+                    }
+                    continue;
+                }
+
+                // Ambil subject
+                if (!$ambilSubject) {
+                    if (stripos($text, 'perihal') !== false || stripos($text, 'subject') !== false) {
+                        $ambilSubject = true;
+                        if (strpos($text, ':') !== false) {
+                            $afterColon = trim(preg_replace('/.(perihal|subject)\s:\s*/i', '', $text));
+                            $judul .= $afterColon;
+                        } else {
+                            $judul .= $text;
+                        }
+                        continue;
+                    }
+                } else {
+                    $judul .= ' ' . $text;
+                }
+                // Ambil nama client
+                if (!$ambilClient) {
+                    // Deteksi baris yang mengandung "kepada" atau "kepada yth"
+                    if (preg_match('/^kepada\s*(yth)?[,.]?/i', $text)) {
+                        $ambilClient = true;
+                        // Bersihkan kata "Kepada Yth," dari baris ini, jika ada teks sesudahnya simpan, kalau tidak lanjut ambil baris berikutnya
+                        $cleaned = preg_replace('/^kepada\s*(yth)?[,.]?\s*/i', '', $text);
+                        if ($cleaned !== '') {
+                            $namaClientLines[] = $cleaned;
+                        }
+                        continue;
+                    }
+                } else {
+                    // Jika sudah mulai ambil client, cek apakah baris ini adalah "di tempat" atau baris kosong (di atas sudah dicek kosong)
+                    if (preg_match('/^di tempat$/i', $text)) {
+                        // Selesai ambil client
+                        $ambilClient = false;
+                        continue;
+                    }
+                    // Tambahkan baris client
+                    $namaClientLines[] = $text;
                 }
             }
-            $text = trim($text);
         }
 
-        if ($text === '') {
-            continue;
-        }
-
-        // ===== DETEKSI PERIHAL =====
-        if (!$ambil && stripos($text, 'perihal') !== false) {
-            $ambil = true;
-
-            // Ambil teks setelah titik dua
-            if (strpos($text, ':') !== false) {
-                $afterColon = trim(preg_replace('/.*perihal\s*:\s*/i', '', $text));
-                if ($afterColon !== '') {
-                    $judul .= $afterColon;
-                }
-            }
-
-            continue;
-        }
-
-        // ===== STOP JIKA MASUK BAGIAN BARU =====
-        if ($ambil) {
-            foreach ($stopKeywords as $stop) {
-                if (stripos($text, $stop) !== false) {
-                    break 3; // STOP TOTAL
-                }
-            }
-
-            // STOP jika format bab
-            if (preg_match('/^(I\.|1\.|A\.)/', $text)) {
-                break 2;
-            }
-
-            // Tambah ke judul (multi-line)
-            $judul .= ' ' . $text;
-        }
+        $judul = trim($judul);
+        $judul = substr($judul, 0, 255);
+        $namaClient = implode(' ', $namaClientLines);
+        $namaClient = trim($namaClient);
+        $namaClient = substr($namaClient, 0, 255);
     }
 
-}
+    Penawaran::create([
+        'nosurat' => $request->nosurat,
+        'judul' => $judul,
+        'namaclient' => $namaClient,
+        'picmit' => Auth::id(),
+        'tanggal' => now(),
+        'surat' => $filePath,
+    ]);
 
-$namaClient = null;
-$ambilClient = false;
-
-$stopClient = [
-    'di tempat',
-    'dengan hormat',
-    'perihal',
-];
-
-foreach ($phpWord->getSections() as $section) {
-    foreach ($section->getElements() as $element) {
-
-        $text = '';
-
-        if ($element instanceof Text) {
-            $text = trim($element->getText());
-        }
-
-        if ($element instanceof TextRun) {
-            foreach ($element->getElements() as $child) {
-                if ($child instanceof Text) {
-                    $text .= $child->getText();
-                }
-            }
-            $text = trim($text);
-        }
-
-        if ($text === '') continue;
-
-        // ===== DETEKSI KEPADA YTH =====
-        if (!$ambilClient && stripos($text, 'kepada') !== false) {
-
-            // Jika satu baris
-            if (strpos($text, ':') !== false) {
-                $after = trim(explode(':', $text, 2)[1]);
-                if ($after !== '') {
-                    $namaClient = $after;
-                    break 2;
-                }
-            }
-
-            $ambilClient = true;
-            continue;
-        }
-
-        // ===== AMBIL BARIS SETELAHNYA =====
-        if ($ambilClient) {
-
-            // STOP jika masuk bagian lain
-            foreach ($stopClient as $stop) {
-                if (stripos($text, $stop) !== false) {
-                    break 3;
-                }
-            }
-
-            // Ambil baris pertama valid
-            if (strlen($text) > 3 && preg_match('/[a-zA-Z]/', $text)) {
-                $namaClient = $text;
-                break 2;
-            }
-        }
-    }
-}
-
-
-$judul = trim($judul);
-
-}
-
-     Penawaran::create([
-    'nosurat'    => $request->nosurat,
-    'judul'      => $judul, // ✅ PAKAI HASIL BACA WORD
-    'namaclient' => $namaClient,
-    'pic'        => $request->pic ?? null,
-    'picmit'     => Auth::id(),
-    'tanggal'    => now(),
-    'status'     => $request->status ?? null,
-    'harga'      => $request->harga ?? null,
-    'surat'      => $filePath,
-]);
-
-
-    return redirect()->route('penawaran.index')->with('success', 'Data berhasil disimpan!');
+    return redirect()->route('penawaran.index')
+        ->with('success', 'Data berhasil disimpan!');
 }
 public function upload($id)
 {
@@ -275,121 +225,157 @@ public function uploadStore(Request $request, $id)
     return redirect()
         ->route('penawaran.index')
         ->with('success', 'Revisi berhasil diupload. Silakan approve ulang.');
-}
+    }
+
+
 public function approve($id)
 {
+    $penawaran = Penawaran::findOrFail($id);
+    $approvedBy = auth()->id();
+
     DB::beginTransaction();
 
     try {
-        $penawaran = Penawaran::findOrFail($id);
-        $approvedBy = auth()->id();
-
         /* ===============================
-         * 1. GENERATE QR
+         * 1. SIMPAN DATA UTAMA DULU (ANTI FAIL)
          * =============================== */
-        $qrText = json_encode([
-            'penawaran_id' => $penawaran->id,
-            'nosurat'      => $penawaran->nosurat,
-            'approved_by'  => $approvedBy,
-            'approved_at'  => now()->toDateTimeString(),
-        ]);
+        $penawaran->hash = hash_hmac(
+            'sha256',
+            $penawaran->id . $penawaran->nosurat . now(),
+            config('app.key')
+        );
+
+        $penawaran->status = 'approved';
+        $penawaran->approved_by = $approvedBy;
+        $penawaran->save();
+
+        DB::commit();
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        return back()->with('error', 'Gagal approve: '.$e->getMessage());
+    }
+
+    /* ===============================
+     * 2. QR CODE (TIDAK BIKIN GAGAL)
+     * =============================== */
+    try {
+        $qrText = route('penawaran.verify', $penawaran->hash);
 
         $qrCode = new QrCode($qrText);
         $qrCode->setSize(200)->setMargin(10);
 
         $writer = new PngWriter();
-        $result = $writer->write($qrCode);
 
-        $barcodePath = storage_path("app/public/barcode/penawaran_{$penawaran->id}.png");
-        if (!file_exists(dirname($barcodePath))) {
-            mkdir(dirname($barcodePath), 0777, true);
-        }
-        $result->saveToFile($barcodePath);
+        $barcodeDir = storage_path('app/public/barcode');
+        if (!file_exists($barcodeDir)) mkdir($barcodeDir, 0777, true);
 
-        /* ===============================
-         * 2. LOAD WORD AS TEMPLATE
-         * =============================== */
-        $wordPath = storage_path('app/public/' . $penawaran->surat);
-        if (!file_exists($wordPath)) {
-            throw new \Exception('File Word tidak ditemukan');
-        }
+        $barcodeName = "penawaran_{$penawaran->id}.png";
+        $barcodePath = $barcodeDir . '/' . $barcodeName;
 
-        if (!$this->wordHasPlaceholder($wordPath, '${QR_TTD}')) {
-        throw new \Exception(
-    'File Word belum memiliki area tanda tangan QR. ' .
-    'Pastikan terdapat teks ${QR_TTD} di footer dokumen.'
-);
+        $writer->write($qrCode)->saveToFile($barcodePath);
 
-        }
-
-$template = new TemplateProcessor($wordPath);
-
-        /* ===============================
-         * 3. GANTI PLACEHOLDER QR
-         * =============================== */
-        $template->setImageValue('QR_TTD', [
-            'path'   => $barcodePath,
-            'width'  => 100,
-            'height' => 100,
-            'ratio'  => true,
-        ]);
-
-        /* ===============================
-         * 4. SIMPAN WORD APPROVED
-         * =============================== */
-        $approvedWordName = 'APPROVED_' . basename($penawaran->surat);
-        $approvedWordPath = storage_path('app/public/penawaran/' . $approvedWordName);
-
-        if (!file_exists(dirname($approvedWordPath))) {
-            mkdir(dirname($approvedWordPath), 0777, true);
-        }
-
-        $template->saveAs($approvedWordPath);
-
-        /* ===============================
-         * 5. WORD → PDF
-         * =============================== */
-        $phpWord = IOFactory::load($approvedWordPath);
-        $htmlWriter = IOFactory::createWriter($phpWord, 'HTML');
-
-        ob_start();
-        $htmlWriter->save('php://output');
-        $html = ob_get_clean();
-
-        if (!Storage::exists('public/pdf')) {
-            Storage::makeDirectory('public/pdf');
-        }
-
-        $pdfName = 'penawaran_' . $penawaran->id . '.pdf';
-
-        $pdf = Pdf::loadHTML($html)->setOptions([
-            'isRemoteEnabled' => true,
-            'isHtml5ParserEnabled' => true,
-        ]);
-
-        Storage::put('public/pdf/' . $pdfName, $pdf->output());
-
-        /* ===============================
-         * 6. UPDATE DB
-         * =============================== */
-        $penawaran->update([
-            'status'        => 'approved',
-            'approved_by'   => $approvedBy,
-            'barcode'       => 'barcode/penawaran_' . $penawaran->id . '.png',
-            'pdf'           => 'pdf/' . $pdfName,
-            'approved_word' => 'penawaran/' . $approvedWordName,
-        ]);
-
-        DB::commit();
-
-        return redirect()
-            ->route('penawaran.index')
-            ->with('success', 'Approve berhasil, layout Word tetap rapi');
+        $penawaran->barcode = 'barcode/' . $barcodeName;
+        $penawaran->save();
 
     } catch (\Throwable $e) {
-        DB::rollBack();
-        return back()->with('error', $e->getMessage());
+        Log::error('QR ERROR: '.$e->getMessage());
     }
+
+    /* ===============================
+     * 3. WORD APPROVED (OPTIONAL)
+     * =============================== */
+    try {
+    if (!empty($penawaran->surat)) {
+
+        $wordPath = storage_path('app/public/' . $penawaran->surat);
+
+        if (file_exists($wordPath)) {
+
+            $template = new TemplateProcessor($wordPath);
+
+            if ($penawaran->barcode) {
+                $template->setImageValue('QR_TTD', [
+                    'path'   => storage_path('app/public/' . $penawaran->barcode),
+                    'width'  => 100,
+                    'height' => 100,
+                    'ratio'  => true,
+                ]);
+            }
+
+            $approvedWordName = 'APPROVED_' . basename($penawaran->surat);
+            $approvedWordDir = storage_path('app/public/penawaran');
+
+            if (!file_exists($approvedWordDir)) {
+                mkdir($approvedWordDir, 0777, true);
+            }
+
+            $approvedWordPath = $approvedWordDir . '/' . $approvedWordName;
+
+            $template->saveAs($approvedWordPath);
+
+            if (!file_exists($approvedWordPath)) {
+                Log::error("FAILED SAVE DOCX: " . $approvedWordPath);
+            }
+
+            $penawaran->approved_word = 'penawaran/' . $approvedWordName;
+            $penawaran->save();
+        }
+    }
+        } catch (\Throwable $e) {
+            Log::error('WORD ERROR: ' . $e->getMessage());
+        }
+
+    /* ===============================
+     * 4. PDF GENERATE (OPTIONAL)
+     * =============================== */
+    /* ===============================
+ * 4. PDF GENERATE (PAKAI LIBREOFFICE)
+ * =============================== */
+try {
+
+    if (!empty($penawaran->approved_word)) {
+
+        $docxPath = storage_path('app/public/' . $penawaran->approved_word);
+
+        if (!file_exists($docxPath)) {
+            throw new \Exception("DOCX tidak ditemukan");
+        }
+
+        $outputDir = storage_path('app/public/pdf');
+
+        if (!file_exists($outputDir)) {
+            mkdir($outputDir, 0777, true);
+        }
+
+        $soffice = '"C:\\Program Files\\LibreOffice\\program\\soffice.exe"';
+
+        $input = escapeshellarg($docxPath);
+        $output = escapeshellarg($outputDir);
+
+        $command = "$soffice --headless --convert-to pdf:writer_pdf_Export --outdir $output $input 2>&1";
+
+        exec($command, $out, $return);
+
+        $pdfName = pathinfo($docxPath, PATHINFO_FILENAME) . '.pdf';
+        $pdfFullPath = $outputDir . DIRECTORY_SEPARATOR . $pdfName;
+
+        sleep(1);
+
+        if (!file_exists($pdfFullPath)) {
+            throw new \Exception("PDF gagal dibuat");
+        }
+
+        $penawaran->pdf = 'pdf/' . $pdfName;
+        $penawaran->save();
+    }
+
+} catch (\Throwable $e) {
+    Log::error('PDF ERROR: ' . $e->getMessage());
+}
+
+    return redirect()
+        ->route('penawaran.index')
+        ->with('success', 'Penawaran berhasil disetujui!');
 }
 private function wordHasPlaceholder(string $docxPath, string $placeholder): bool
 {
@@ -425,13 +411,106 @@ public function revisi(Request $request, $id)
         'approved_by'   => null,
         'approved_word' => null,
         'pdf'           => null,
+        'hash'          => null, 
     ]);
 
     return redirect()
         ->route('penawaran.index')
         ->with('success', 'Revisi diajukan. Silakan upload dokumen terbaru.');
 }
+public function edit($id)
+{
+    $penawaran = Penawaran::findOrFail($id);
+    return view('penawaran.edit', compact('penawaran'));
+}
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'judul' => 'required',
+        'surat' => 'nullable|mimes:doc,docx|max:5120',
+    ]);
 
+    $penawaran = Penawaran::findOrFail($id);
 
+    $data = [
+        'judul' => $request->judul,
+    ];
+
+    /* ===============================
+     * 🔥 JIKA ADA FILE BARU
+     * =============================== */
+    if ($request->hasFile('surat')) {
+
+        // hapus file lama
+        if ($penawaran->surat && Storage::exists('public/' . $penawaran->surat)) {
+            Storage::delete('public/' . $penawaran->surat);
+        }
+
+        // simpan file baru
+        $path = $request->file('surat')->store('penawaran', 'public');
+
+        $data['surat'] = $path;
+
+        // 🔥 reset semua hasil approve
+        $data['status'] = 'draft';
+        $data['hash'] = null;
+        $data['barcode'] = null;
+        $data['approved_word'] = null;
+        $data['pdf'] = null;
+        $data['approved_by'] = null;
+    }
+
+    $penawaran->update($data);
+
+    return redirect()->route('penawaran.index')
+        ->with('success', 'Data berhasil diupdate');
+}
+public function verify($hash)
+{
+    $penawaran = Penawaran::where('hash', $hash)->first();
+
+    if (!$penawaran) {
+        abort(404, 'Dokumen tidak terdaftar');
+    }
+
+    if ($penawaran->status !== 'approved') {
+        return view('penawaran.valid', [
+            'status' => 'invalid',
+            'message' => 'Dokumen belum disetujui'
+        ]);
+    }
+
+    return view('penawaran.valid', [
+        'status' => 'valid',
+        'penawaran' => $penawaran
+    ]);
+}
+public function viewPdf($id, $hash)
+{
+    $penawaran = Penawaran::findOrFail($id);
+
+    if ($penawaran->hash !== $hash) {
+        abort(403, 'Hash tidak valid');
+    }
+
+    if (!$penawaran->pdf) {
+        abort(404, 'PDF belum ada');
+    }
+
+    $fullPath = storage_path('app/public/' . $penawaran->pdf);
+
+    if (!file_exists($fullPath)) {
+        Log::error("PDF NOT FOUND", [
+            'db' => $penawaran->pdf,
+            'path' => $fullPath
+        ]);
+        abort(404, 'File PDF tidak ditemukan di storage');
+    }
+
+    return response()->file($fullPath, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="'.$penawaran->nosurat.'.pdf"',
+    ]);
 }
 
+}

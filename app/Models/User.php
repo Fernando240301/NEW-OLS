@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\SysUserDetail;
 
 class User extends Authenticatable
 {
@@ -45,4 +46,17 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    // In your User model
+  public function dailyActivities()
+{
+    return $this->hasMany(DailyActivity::class, 'user_id');
+}
+ public function detail()
+{
+    return $this->hasOne(SysUserDetail::class, 'userid', 'id');
+}
+public function role()
+{
+    return $this->belongsTo(Role::class, 'rolesid');
+}
 }

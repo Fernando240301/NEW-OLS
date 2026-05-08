@@ -11,6 +11,7 @@ use App\Http\Controllers\MarketController;
 use App\Http\Controllers\OperationController;
 use App\Http\Controllers\ProspectController;
 use App\Http\Controllers\PenawaranController;
+use App\Http\Controllers\DailyActivityController;
 use App\Http\Controllers\PPJBController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\AccountTypeController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\PpjbnewController;
 use App\Http\Controllers\LpjbController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\DaftarPOController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -64,7 +66,6 @@ Route::middleware('auth')->group(function () {
 Route::get('/logactivity', [AuthController::class, 'logactivity'])
     ->middleware('auth')
     ->name('logactivity');
-
 
 // Register
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -330,13 +331,17 @@ Route::middleware('auth')->group(function () {
         ->name('penawaran.delete');
 
     // APPROVE 
-    Route::post('/penawaran/{id}/approve', [PenawaranController::class, 'approve'])
-        ->name('penawaran.approve');
+    Route::post('/penawaran/approve/{id}', [PenawaranController::class, 'approve'])
+    ->name('penawaran.approve');
     Route::post(
         '/penawaran/{id}/revisi',
         [App\Http\Controllers\PenawaranController::class, 'revisi']
     )->name('penawaran.revisi');
+    Route::get('/penawaran/verify/{hash}', [PenawaranController::class, 'verify'])
+    ->name('penawaran.verify');
 
+    Route::get('/penawaran/pdf/{id}/{hash}', [PenawaranController::class, 'viewPdf'])
+    ->name('penawaran.pdf');
     //Add/Edit/Delete Prospect
     Route::middleware('auth')->group(function () {
         Route::get('/ppjb', [PPJBController::class, 'index'])->name('ppjb.index');
@@ -351,4 +356,41 @@ Route::middleware('auth')->group(function () {
         Route::get('/verifikasi/ppjb', [PpjbnewController::class, 'verifikasi'])->name('verifikasi.ppjb');
         Route::post('/verifikasi/ppjb/{id}/approve', [PpjbnewController::class, 'approve'])->name('verifikasi.ppjb.approve');
     });
-});
+    //DAFTAR_PO
+    Route::get('/daftar-po', [DaftarPOController::class, 'index'])
+    ->name('daftarpo.index');
+    Route::get('daftarpo/create', [DaftarPOController::class, 'create'])
+     ->name('daftarpo.create')
+     ->middleware('auth');
+     Route::post('daftarpo/store', [DaftarPOController::class, 'store'])->name('daftarpo.store');
+    Route::get('/{id}/edit', [DaftarPOController::class, 'edit'])->name('daftarpo.edit');    // form edit
+    Route::put('/{id}', [DaftarPOController::class, 'update'])->name('daftarpo.update');    // update data
+    Route::delete('/{id}', [DaftarPOController::class, 'destroy'])->name('daftarpo.destroy'); // hapus data
+    Route::post('/daftarpo/upload/{id}', [DaftarPOController::class, 'uploadDocument'])->name('daftarpo.upload');
+    Route::get('/daftar-po/{id}/preview', [DaftarPOController::class, 'preview'])->name('daftarpo.preview');
+    Route::get('/po/{id}/{role}/{action}', [DaftarPOController::class, 'approval']);
+    Route::get('/po/{id}/pdf', [DaftarPOController::class, 'generatePDF'])->name('daftarpo.pdf');
+    });
+    //Daily Activity
+    Route::middleware('auth')->group(function () {
+    Route::get('/dailyactivity', [DailyActivityController::class, 'index'])
+        ->name('dailyactivity.index');
+    Route::get('/api/projects', [ProjectController::class, 'search']);
+    Route::get('/activity-events', [DailyActivityController::class, 'events']);
+
+    Route::resource('dailyactivity', DailyActivityController::class)->except(['show']);
+    });
+    Route::post('/dailyactivity/store', [DailyActivityController::class, 'store'])->name('dailyactivity.store');
+    
+    Route::get('/dailyactivity/filter', [DailyActivityController::class, 'filter'])
+    ->name('dailyactivity.filter');
+    Route::get('/approval', [DailyActivityController::class, 'approvalPage'])
+    ->name('approval.page');
+    Route::get('/approval/data', [DailyActivityController::class, 'approvalData'])->name('dailyactivity.approve.data');
+    Route::get('/dailyactivity/approve/data', [DailyActivityController::class, 'approvalData'])
+    ->name('dailyactivity.approve.data');
+    Route::post('/dailyactivity/{id}/approve', [DailyActivityController::class, 'approve']);
+    Route::post('/dailyactivity/{id}/reject', [DailyActivityController::class, 'reject']);
+    
+    
+
