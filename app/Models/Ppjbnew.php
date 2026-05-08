@@ -22,6 +22,7 @@ class Ppjbnew extends Model
         'status',
         'journal_id',
         'total',
+        'refer_project',
         'created_by' // WAJIB ADA
     ];
 
@@ -50,7 +51,7 @@ class Ppjbnew extends Model
             return 'OCM';
         }
 
-        if (str_contains($dari, 'marketing')) {
+        if (str_contains($dari, 'marketing') || str_contains($dari, 'hse')) {
             return 'Deam';
         }
 
@@ -72,5 +73,10 @@ class Ppjbnew extends Model
     public function lpjb()
     {
         return $this->hasOne(\App\Models\Lpjb::class, 'ppjb_id');
+    }
+
+    public function rpums()
+    {
+        return $this->hasMany(\App\Models\Rpum::class, 'ppjb_id');
     }
 }

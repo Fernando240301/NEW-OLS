@@ -2,13 +2,15 @@
 
 @section('title', 'Pajak MIGAS')
 
+@section('plugins.Datatables', true)
+
 @section('content_header')
     <h1>Pajak Project MIGAS</h1>
 @stop
 
 @section('content')
 
-    <table class="table table-bordered">
+    <table class="table table-bordered table-striped">
 
         <thead>
             <tr>
@@ -23,22 +25,29 @@
 
         <tbody>
 
-            @foreach ($pics as $pic)
-                <tr>
+            @foreach ($ppjbs as $ppjb)
+                <form method="POST" action="{{ route('pajak.migas.process') }}">
+                    @csrf
 
-                    <td>{{ $pic->pic }}</td>
+                    <tr>
 
-                    <td>
-                        {{ date('F', mktime(0, 0, 0, $pic->bulan, 1)) }}
-                    </td>
+                        <td>{{ $ppjb->no_ppjb }}</td>
 
-                    <td>
-                        {{ number_format($pic->total, 0, ',', '.') }}
-                    </td>
+                        <td>{{ $ppjb->pic }}</td>
 
-                    <td>
-                        {{ number_format($pic->pph21, 0, ',', '.') }}
-                    </td>
+                        <td class="total" data-total="{{ $ppjb->total }}">
+                            {{ number_format($ppjb->total, 0, ',', '.') }}
+                        </td>
+
+                        <input type="hidden" name="ppjb_id" value="{{ $ppjb->id }}">
+
+                        <td>
+                            <input type="number" name="pph21" class="form-control">
+                        </td>
+
+                        <td>
+                            <input type="number" name="pph23" class="form-control pph23">
+                        </td>
 
                     <td>
 
@@ -182,78 +191,4 @@
         });
     </script>
 
-    <script>
-        $('.btn-detail').click(function() {
-
-            let pic = $(this).data('pic');
-            let bulan = $(this).data('bulan');
-
-            $.get('/pajak-migas/detail/' + pic, {
-                bulan: bulan
-            }, function(data) {
-
-                let html = '';
-                let htmlSimulasi = '';
-
-                // LIST PPJB
-                data.ppjbs.forEach(function(row) {
-
-                    html += `
-        <tr>
-            <td>${row.no_ppjb}</td>
-            <td>${parseInt(row.total).toLocaleString()}</td>
-
-            <td>
-                <button 
-                class="btn btn-primary btn-sm btn-preview"
-                data-url="${row.pdf_url}">
-                Preview
-                </button>
-            </td>
-
-        </tr>
-        `;
-                });
-
-                $('#detailBody').html(html);
-
-
-                // SIMULASI PAJAK
-                data.simulasi.forEach(function(row, index) {
-
-                    htmlSimulasi += `
-        <tr>
-
-            <td>${index+1}</td>
-
-            <td>${row.no_ppjb}</td>
-
-            <td>${parseInt(row.fee).toLocaleString()}</td>
-
-            <td>${parseInt(row.akumulasi).toLocaleString()}</td>
-
-            <td>${row.tarif}</td>
-
-            <td>${parseInt(row.pajak).toLocaleString()}</td>
-
-        </tr>
-        `;
-                });
-
-                $('#simulasiBody').html(htmlSimulasi);
-
-            });
-
-        });
-
-        $(document).on('click', '.btn-preview', function() {
-
-            let url = $(this).data('url');
-
-            $('#pdfFrame').attr('src', url);
-
-            $('#modalPreview').modal('show');
-
-        });
-    </script>
 @stop

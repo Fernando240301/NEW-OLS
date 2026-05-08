@@ -169,54 +169,7 @@
         <tr>
             <td><b>No. Project</b></td>
             <td>:</td>
-            <td colspan="4">
-
-                @php
-
-                    $noProject = '-';
-                    $projectName = '';
-
-                    /*
-=========================
-PROJECT SIK
-=========================
-*/
-                    if ($ppjb->workflow_id) {
-                        $sik = DB::table('app_workflow')->where('workflowid', $ppjb->workflow_id)->first();
-
-                        if ($sik) {
-                            $pr = DB::table('app_workflow')->where('workflowid', $sik->nworkflowid)->first();
-
-                            if ($pr) {
-                                $prData = json_decode($pr->workflowdata, true);
-
-                                $noProject = $prData['project_number'] ?? '-';
-                                $projectName = $pr->projectname ?? '';
-                            }
-                        }
-                    }
-
-                    /*
-=========================
-PROJECT MIGAS
-=========================
-*/
-                    if ($ppjb->pr_workflow_id) {
-                        $pr = DB::table('app_workflow')->where('workflowid', $ppjb->pr_workflow_id)->first();
-
-                        if ($pr) {
-                            $prData = json_decode($pr->workflowdata, true);
-
-                            $noProject = $prData['project_number'] ?? '-';
-                            $projectName = $pr->projectname ?? '';
-                        }
-                    }
-
-                @endphp
-
-                {{ $noProject }} {{ $projectName ? ' | ' . $projectName : '' }}
-
-            </td>
+            <td colspan="4">{{ $ppjb->refer_project }}</td>
         </tr>
 
         <tr>

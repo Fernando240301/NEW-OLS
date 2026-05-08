@@ -25,8 +25,8 @@ class LpjbController extends Controller
         $ppjb = Ppjbnew::with('details.coa', 'lpjb')
             ->findOrFail($ppjbId);
 
-        if ($ppjb->status != 'approved') {
-            abort(403, 'PPJB harus approved.');
+        if ($ppjb->status != 'approved' && $ppjb->status != 'paid') {
+            abort(403, 'PPJB Belum Approved / Belum Diberikan');
         }
 
         if ($ppjb->lpjb) {

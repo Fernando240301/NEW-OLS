@@ -12,7 +12,7 @@
 
 
 @section('content_header')
-    <h1 style="text-align: center; color: blue;">{{ $workflowdata['projectname'] }}</h1>
+    <h1 style="text-align: center; color: blue;">{{ $workflow->projectname }}</h1>
 @endsection
 
 @section('content')

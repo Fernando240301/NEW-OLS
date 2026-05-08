@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Journal;
 use App\Models\ChartOfAccount;
+use App\Models\Ppjbnew;
+use App\Models\Lpjb;
 use App\Services\JournalService;
 use Illuminate\Http\Request;
 
@@ -24,7 +26,28 @@ class JournalController extends Controller
 
     public function index()
     {
-        $journals = Journal::latest()->paginate(15);
+        $journals = Journal::latest()->get(); // 🔥 ambil semua
+
+        // ambil id reference
+        $ppjbIds = $journals->where('reference_type', 'PPJB')->pluck('reference_id');
+        $lpjbIds = $journals->where('reference_type', 'LPJB')->pluck('reference_id');
+
+        // preload
+        $ppjbs = Ppjbnew::whereIn('id', $ppjbIds)->get()->keyBy('id');
+        $lpjbs = Lpjb::whereIn('id', $lpjbIds)->get()->keyBy('id');
+
+        foreach ($journals as $j) {
+
+            $j->ref_no = '-';
+
+            if ($j->reference_type === 'PPJB') {
+                $j->ref_no = $ppjbs[$j->reference_id]->no_ppjb ?? '-';
+            } elseif ($j->reference_type === 'LPJB') {
+                $j->ref_no = $lpjbs[$j->reference_id]->no_lpjb ?? '-';
+            } elseif ($j->reference_type === 'MIGAS') {
+                $j->ref_no = 'MIGAS';
+            }
+        }
 
         return view('finance.journals.index', compact('journals'));
     }

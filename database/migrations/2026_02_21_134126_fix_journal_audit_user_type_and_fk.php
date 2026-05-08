@@ -10,18 +10,22 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up()
-    {
-        Schema::table('journal_audits', function (Blueprint $table) {
-            $table->integer('user_id')->nullable()->change();
-        });
+{
+    Schema::table('journal_audits', function (Blueprint $table) {
+        $table->dropForeign(['user_id']);
+    });
 
-        Schema::table('journal_audits', function (Blueprint $table) {
-            $table->foreign('user_id')
-                ->references('userid')
-                ->on('sys_users')
-                ->nullOnDelete();
-        });
-    }
+    Schema::table('journal_audits', function (Blueprint $table) {
+        $table->integer('user_id')->nullable()->change();
+    });
+
+    Schema::table('journal_audits', function (Blueprint $table) {
+        $table->foreign('user_id')
+            ->references('userid')
+            ->on('sys_users')
+            ->nullOnDelete();
+    });
+}
 
     public function down()
     {

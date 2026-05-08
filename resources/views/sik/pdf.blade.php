@@ -141,6 +141,21 @@
 
 <body>
 
+    @php
+    function val_sik($arr, $rawSIK, $key)
+    {
+        if (array_key_exists($key, $arr) && $arr[$key] !== null && $arr[$key] !== '') {
+            return $arr[$key];
+        }
+
+        if (array_key_exists($key, $rawSIK) && $rawSIK[$key] !== null && $rawSIK[$key] !== '') {
+            return $rawSIK[$key];
+        }
+
+        return '-';
+    }
+    @endphp
+
     {{-- ================= HEADER ================= --}}
     <table>
         <tr>
@@ -174,7 +189,19 @@
             <td style="padding: 2px; border-left:none;border-right:none;border-top:none;">Tanggal</td>
             <td style="padding: 2px; border-left:none;border-right:none;border-top:none;">:</td>
             <td style="padding: 2px; border-left:none;border-top:none;">
-                {{ \Carbon\Carbon::parse($arr['tanggal_sik'])->translatedFormat('d F Y') ?? '-' }}
+                @php
+                if (!empty($arr['no_sik_extend'])) {
+                    $tanggal = !empty($arr['date_start'])
+                        ? \Carbon\Carbon::parse($arr['date_start'])->subDays(2)
+                        : null;
+                } else {
+                    $tanggal = !empty($arr['tanggal_sik'])
+                        ? \Carbon\Carbon::parse($arr['tanggal_sik'])
+                        : null;
+                }
+                @endphp
+
+                {{ $tanggal ? $tanggal->translatedFormat('d F Y') : '-' }}
             </td>
         </tr>
     </table>
@@ -191,7 +218,7 @@
         <tr>
             <td style="padding: 2px; border-top: none; border-right: none;">&nbsp;Contact Person</td>
             <td style="padding: 2px; border-top: none; border-left: none; border-right: none;">:</td>
-            <td style="padding: 2px; border-top: none; border-left: none;">{{ $arr['contact_person'] ?? '-' }}</td>
+            <td style="padding: 2px; border-top: none; border-left: none;">{{ val_sik($arr, $rawSIK, 'contact_person') ?? '-' }}</td>
         </tr>
     </table>
 
@@ -204,24 +231,24 @@
             <td width="25%" align="center" style="padding: 4px;"><b>Jumlah</b></td>
         </tr>
 
-        @foreach ($arr['peralatan'] ?? [] as $i => $alat)
-            <tr>
-                @php
-                    $typeId = (int) $alat['type_peralatan'];
-                @endphp
+        @foreach ($peralatanList as $alat)
+            @php
+                $typeId = $alat['type_peralatan'];
+            @endphp
 
+            <tr>
                 <td align="center" style="vertical-align: middle; padding: 4px;">
                     {{ $jenisMap[$typeId]->nama_jenis ?? '-' }}
                 </td>
-
                 <td align="center" style="vertical-align: middle; padding: 4px;">
                     {{ $jenisMap[$typeId]->nama_tipe ?? '-' }}
                 </td>
-
                 <td align="center" style="vertical-align: middle; padding: 4px;">
                     {{ $jenisMap[$typeId]->nama_kategori ?? '-' }}
                 </td>
-                <td align="center" style="vertical-align: middle; padding: 4px;">{{ $alat['jumlah'] ?? '-' }}</td>
+                <td align="center" style="vertical-align: middle; padding: 4px;">
+                    {{ $alat['jumlah'] ?? '-' }}
+                </td>
             </tr>
         @endforeach
 
@@ -244,7 +271,7 @@
                 Kerja</td>
             <td width="2%" style="padding: 2px; border-bottom: none; border-left:none;border-right:none; font-size: 8pt;">:</td>
             <td width="23%" style="padding: 2px; border-bottom: none; border-left:none; border-right:none; font-size: 8pt;">
-                {{ $arr['location_job'] ?? '-' }}
+                {{ val_sik($arr, $rawSIK, 'location_job') }}
             </td>
 
             {{-- TGL MULAI --}}
@@ -261,14 +288,18 @@
             <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none;border-right:none; font-size: 8pt;">:
             </td>
             <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none; border-right:none; font-size: 8pt;">
-                {{ $arr['pilihan_jabatan_project'] }}</td>
+                {{ val_sik($arr, $rawSIK, 'pilihan_jabatan_project') }}</td>
 
             <td style="padding: 2px; border-bottom: none; border-top: none; border-right:none; border-left: none; font-size: 8pt;">
                 &nbsp;Area</td>
             <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none;border-right:none; font-size: 8pt;">:
             </td>
             <td style="padding: 2px; border-bottom: none; border-top: none; border-left:none; border-right:none; font-size: 8pt;">
-                {{ $arr['area'] ?? '-' }}
+                @php
+                $areaVal = val_sik($arr, $rawSIK, 'area_sik');
+                @endphp
+
+                {{ [1 => 'On-shore', 2 => 'Off-shore'][$areaVal] ?? $areaVal }}
             </td>
 
             <td style="padding: 2px; border-bottom: none; border-top: none; border-right:none; border-left: none; font-size: 8pt;">
@@ -292,7 +323,8 @@
             <td style="padding: 2px; border-top: none; border-right:none; border-left: none; font-size: 8pt;">&nbsp;Durasi</td>
             <td style="padding: 2px; border-top: none; border-left:none;border-right:none; font-size: 8pt;">:</td>
             <td style="padding: 2px; border-top: none; border-left:none; font-size: 8pt;">
-                {{ $arr['durasi'] }}
+                
+                {{ $arr['durasi'] ?? $arr['durasi_extend1'] }}
             </td>
         </tr>
 
@@ -300,15 +332,39 @@
 
     {{-- ================= CHECKLIST ================= --}}
     @php
-        $persiapan = $arr['persiapan'] ?? [];
-        $lapangan = $arr['lapangan'] ?? [];
-        $pelaporan = $arr['pelaporan'] ?? [];
-        $migas = $arr['migas'] ?? [];
+    function cek($val)
+    {
+        $val = trim((string)$val); // 🔥 buang spasi dulu
 
-        function cek($val)
-        {
-            return $val === 'Yes' ? '[ v ]' : '[   ]';
+        return ($val == '1' || strtolower($val) == 'yes') 
+            ? '[ v ]' 
+            : '[   ]';
+    }
+    @endphp
+
+    @php
+    function ceklist_sik($arr, $rawSIK, $group, $key)
+    {
+        // PRIORITAS: data baru
+        if (isset($arr[$group][$key])) {
+            return cek($arr[$group][$key]);
         }
+
+        if (isset($arr[$key])) {
+            return cek($arr[$key]);
+        }
+
+        // FALLBACK: parent SIK
+        if (isset($rawSIK[$group][$key])) {
+            return cek($rawSIK[$group][$key]);
+        }
+
+        if (isset($rawSIK[$key])) {
+            return cek($rawSIK[$key]);
+        }
+
+        return cek(null);
+    }
     @endphp
 
     <table style="font-size:8pt;">
@@ -319,7 +375,7 @@
         </tr>
 
         <tr>
-            <td colspan="2" align="center" style="padding: 3px;"><b>Persiapan Inspeksi</b></td>
+            <td colspan="2" align="center" style="padding: 3px;"><b>arr Inspeksi</b></td>
             <td colspan="2" align="center" style="padding: 3px;"><b>Pemeriksaan Lapangan</b></td>
             <td colspan="2" align="center" style="padding: 3px;"><b>Pelaporan Inspeksi</b></td>
             <td colspan="2" align="center" style="padding: 3px;"><b>Pengurusan Migas</b></td>
@@ -327,55 +383,55 @@
 
         <tr>
             <td>Review Dokumen Awal</td>
-            <td align="center">{{ cek($persiapan['peri1'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'persiapan', 'peri1') }}</td>
 
             <td>Pra - Inspeksi Meeting</td>
-            <td align="center">{{ cek($lapangan['pl1'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'lapangan', 'pl1') }}</td>
 
             <td>Sistematika Pelaporan</td>
-            <td align="center">{{ cek($pelaporan['si1'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'pelaporan', 'si1') }}</td>
 
             <td>Approval Konseptor</td>
-            <td align="center">{{ cek($migas['pm1'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'migas', 'pm1') }}</td>
         </tr>
 
         <tr>
             <td>Biaya Administrasi/Budget</td>
-            <td align="center">{{ cek($persiapan['peri2'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'persiapan', 'peri2') }}</td>
 
             <td>Verifikasi Dokumen Teknis</td>
-            <td align="center">{{ cek($lapangan['pl2'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'lapangan', 'pl2') }}</td>
 
             <td>Pemindahan Data Lapangan</td>
-            <td align="center">{{ cek($pelaporan['si2'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'pelaporan', 'si2') }}</td>
 
             <td>Approval Direktur Migas</td>
-            <td align="center">{{ cek($migas['pm2'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'migas', 'pm2') }}</td>
         </tr>
 
         <tr>
             <td>Perizinan Kerja</td>
-            <td align="center">{{ cek($persiapan['peri3'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'persiapan', 'peri3') }}</td>
 
             <td>Verifikasi Material / Alat</td>
-            <td align="center">{{ cek($lapangan['pl3'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'lapangan', 'pl3') }}</td>
 
             <td>Design Apraisal / Perhitungan</td>
-            <td align="center">{{ cek($pelaporan['si3'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'pelaporan', 'si3') }}</td>
 
             <td>Lainnya</td>
-            <td align="center">{{ cek($migas['pm3'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'migas', 'pm3') }}</td>
         </tr>
 
         <tr>
             <td>Peralatan Kerja</td>
-            <td align="center">{{ cek($persiapan['peri4'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'persiapan', 'peri4') }}</td>
 
             <td>Inspeksi Fabrikasi / Instalasi</td>
-            <td align="center">{{ cek($lapangan['pl4'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'lapangan', 'pl4') }}</td>
 
             <td>Analisa Laporan</td>
-            <td align="center">{{ cek($pelaporan['si4'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'migas', 'si4') }}</td>
 
             <td></td>
             <td></td>
@@ -386,10 +442,10 @@
             <td></td>
 
             <td>Pengujian Fungsi</td>
-            <td align="center">{{ cek($lapangan['pl5'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'lapangan', 'pl5') }}</td>
 
             <td>Draft Sertifikat (COI dan Migas)</td>
-            <td align="center">{{ cek($pelaporan['si5'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'pelaporan', 'si5') }}</td>
 
             <td></td>
             <td></td>
@@ -400,7 +456,7 @@
             <td></td>
 
             <td>Pengisian Form Inspeksi</td>
-            <td align="center">{{ cek($lapangan['pl6'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'lapangan', 'pl6') }}</td>
 
             <td></td>
             <td></td>
@@ -414,7 +470,7 @@
             <td></td>
 
             <td>Laporan Awal</td>
-            <td align="center">{{ cek($lapangan['pl7'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'lapangan', 'pl7') }}</td>
 
             <td></td>
             <td></td>
@@ -428,7 +484,7 @@
             <td></td>
 
             <td>Closing Meeting</td>
-            <td align="center">{{ cek($lapangan['pl8'] ?? null) }}</td>
+            <td align="center">{{ ceklist_sik($arr, $rawSIK, 'lapangan', 'pl8') }}</td>
 
             <td></td>
             <td></td>
@@ -448,7 +504,7 @@
         <tr>
             <td width="25%" class="ttd-box">
                 <div class="ttd-title">Pemberi Tugas</div>
-                <img src="{{ public_path('uploadfile/ttd/ttd_OCM.png') }}" class="ttd-img">
+                <img src="{{ public_path('uploadfile/ttd/ttd_ocm.png') }}" class="ttd-img">
                 <div class="ttd-jabatan">Manager Operasional</div>
             </td>
 

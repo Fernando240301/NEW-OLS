@@ -120,13 +120,17 @@
             </td>
             <td class="detail-client" rowspan="7">
                 Office Address : <br>
-                <b>{{ $workflow['lokasi_kantor'] }}</b><br><br>
+                <b>{{ $workflow['lokasi_kantor'] ?? '-' }}</b><br><br>
                 Site Address : <br>
-                <b>{{ $workflow['lokasi_lapangan'] }}</b> <br><br>
+                <b>
+                {{ is_array($workflow['lokasi_lapangan'] ?? null) 
+                    ? implode(', ', $workflow['lokasi_lapangan']) 
+                    : ($workflow['lokasi_lapangan'] ?? '-') }}
+                </b> <br><br>
                 Contact Person Client : <br>
-                <b>{{ $workflow['contact_person'] }} ({{ $workflow['no_hp'] }})</b> <br><br>
+                <b>{{ $workflow['contact_person'] ?? '-' }} ({{ $workflow['no_hp'] ?? '-' }})</b> <br><br>
                 Email : <br>
-                <b>{{ $workflow['email'] }}</b>
+                <b>{{ $workflow['email'] ?? '-' }}</b>
             </td>
         </tr>
 
@@ -162,7 +166,7 @@
 
         <tr>
             <td class="project" style="border-top: none">
-                {{ $workflow['projectname'] }}
+                {{ $project->projectname }}
             </td>
         </tr>
     </table>

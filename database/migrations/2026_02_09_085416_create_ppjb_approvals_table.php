@@ -14,7 +14,7 @@ return new class extends Migration
     if (!Schema::hasTable('ppjb_approvals')) {
     Schema::create('ppjb_approvals', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('ppjb_id')->constrained('PPJB')->onDelete('cascade');
+        $table->foreignId('ppjb_id')->constrained('ppjb')->onDelete('cascade');
         $table->unsignedBigInteger('user_id');
         $table->integer('level');
         $table->boolean('is_approved')->default(false);

@@ -140,7 +140,7 @@
                     </tr>
                     <tr>
                         <td>Tanggal Dibutuhkan</td>
-                        <td>: {{ $ppjb->tanggal_dibutuhkan }}</td>
+                        <td>: {{ $tanggalDibutuhkan }}</td>
                     </tr>
                 </table>
             </td>

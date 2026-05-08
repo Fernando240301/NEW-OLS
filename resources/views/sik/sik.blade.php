@@ -12,7 +12,7 @@
 
 
 @section('content_header')
-    <h1 style="text-align: center; color: blue;">{{ $workflowdata['projectname'] }}</h1>
+    <h1 style="text-align: center; color: blue;">{{ $app_workflow->projectname }}</h1>
 @endsection
 
 @section('content')
@@ -66,7 +66,7 @@
                             <td>{{ $row->inspector_fullname }}</td>
 
                             <td>
-                                {{ $row->workflowdata['pilihan_jabatan_project'] }}
+                                {{ $row->workflowdata['pilihan_jabatan_project'] ?? '-' }}
 
                                 <div class="mt-1">
                                     <small class="text-primary d-block">
@@ -148,7 +148,6 @@
                                                 data-link="{{ route('sik.show', $ext->workflowid) }}" title="Copy Link">
                                                 <i class="fas fa-copy"></i>
                                             </button>
-
 
                                             <a href="{{ route('sik.edit', [
                                                 'projectId' => $app_workflow->workflowid,
